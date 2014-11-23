@@ -1,0 +1,25 @@
+{
+  "name": "docke",
+  "version": "0.0.1",
+  "description": "Do stuff with docker",
+  "bin": {
+    "docke": "bin/docke.js"
+  },
+  "dependencies": {
+    "colors": "*",
+    "cson": "*",
+    "dockerode": "^2.0.4",
+    "minimist": "^1.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:metocean/docke.git"
+  },
+  "author": "Thomas Coats",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/metocean/docke/issues"
+  },
+  "readmeFilename": "README.md",
+  "homepage": "https://github.com/metocean/docke"
+}
