@@ -6,10 +6,10 @@
     "docke": "bin/docke.js"
   },
   "dependencies": {
-    "colors": "*",
-    "cson": "*",
-    "dockerode": "^2.0.4",
-    "minimist": "^1.1.0"
+    "colors": "1.0.3",
+    "cson": "1.6.1",
+    "dockerode": "2.0.4",
+    "minimist": "1.1.0"
   },
   "repository": {
     "type": "git",
