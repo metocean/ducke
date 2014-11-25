@@ -76,6 +76,8 @@ WebRequest = (function() {
 module.exports = Modem = (function() {
   function Modem(options) {
     this._dial = __bind(this._dial, this);
+    this._read = __bind(this._read, this);
+    this._open = __bind(this._open, this);
     this._buildHeaders = __bind(this._buildHeaders, this);
     this._parsePath = __bind(this._parsePath, this);
     this.postFile = __bind(this.postFile, this);
@@ -160,34 +162,73 @@ module.exports = Modem = (function() {
     return headers;
   };
 
+  Modem.prototype._open = function(options, callback) {
+    var params, req;
+    params = {
+      headers: this._buildHeaders(options),
+      path: this._parsePath(options),
+      method: options.method
+    };
+    this._conn.apply(params);
+    req = this._conn.request(params);
+    debug('Sending: %s', util.inspect(params, {
+      showHidden: true,
+      depth: null
+    }));
+    if (this.timeout) {
+      req.on('socket', (function(_this) {
+        return function(socket) {
+          socket.setTimeout(_this.timeout);
+          return socket.on('timeout', function() {
+            return req.abort();
+          });
+        };
+      })(this));
+    }
+    req.on('response', (function(_this) {
+      return function(res) {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          return callback(new Error(res.statusCode), null);
+        }
+        return callback(null, res);
+      };
+    })(this));
+    req.on('error', (function(_this) {
+      return function(err) {
+        return callback(err, null);
+      };
+    })(this));
+    return req;
+  };
+
+  Modem.prototype._read = function(res, callback) {
+    var content;
+    content = '';
+    res.on('data', function(data) {
+      return content += data;
+    });
+    return res.on('end', (function(_this) {
+      return function() {
+        var e;
+        debug('Received: %s', content);
+        try {
+          return callback(null, JSON.parse(content));
+        } catch (_error) {
+          e = _error;
+          return callback(null, content);
+        }
+      };
+    })(this));
+  };
+
   Modem.prototype._dial = function(options) {
     return {
       call: (function(_this) {
         return function(callback) {
-          var params, req;
-          params = {
-            headers: _this._buildHeaders(options),
-            path: _this._parsePath(options),
-            method: options.method
-          };
-          _this._conn.apply(params);
-          req = _this._conn.request(params);
-          debug('Sending: %s', util.inspect(params, {
-            showHidden: true,
-            depth: null
-          }));
-          if (_this.timeout) {
-            req.on('socket', function(socket) {
-              socket.setTimeout(_this.timeout);
-              return socket.on('timeout', function() {
-                return req.abort();
-              });
-            });
-          }
-          req.on('response', function(res) {
-            var content;
-            if (res.statusCode < 200 || res.statusCode >= 300) {
-              return callback(new Error(res.statusCode), null);
+          var req;
+          req = _this._open(options, function(err, res) {
+            if (err != null) {
+              return callback(err);
             }
             if (options.openStdin === true) {
               return callback(null, new HttpDuplex(req, res));
@@ -195,23 +236,12 @@ module.exports = Modem = (function() {
             if (options.isStream === true) {
               return callback(null, res);
             }
-            content = '';
-            res.on('data', function(data) {
-              return content += data;
-            });
-            return res.on('end', function() {
-              var e;
-              debug('Received: %s', content);
-              try {
-                return callback(null, JSON.parse(content));
-              } catch (_error) {
-                e = _error;
-                return callback(null, content);
+            return _this._read(res, function(err, content) {
+              if (err != null) {
+                return callback(err);
               }
+              return callback(null, content);
             });
-          });
-          req.on('error', function(error) {
-            return callback(error, null);
           });
           if (options.openStdin) {
             return;

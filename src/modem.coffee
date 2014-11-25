@@ -98,27 +98,48 @@ module.exports = class Modem
       headers['Content-Length'] = options.body.length
     headers
   
+  _open: (options, callback) =>
+    params =
+      headers: @_buildHeaders options
+      path: @_parsePath options
+      method: options.method
+    @_conn.apply params
+    
+    req = @_conn.request params
+    debug 'Sending: %s', util.inspect params,
+      showHidden: yes
+      depth: null
+    
+    if @timeout
+      req.on 'socket', (socket) =>
+        socket.setTimeout @timeout
+        socket.on 'timeout', -> req.abort()
+    
+    req.on 'response', (res) =>
+      if res.statusCode < 200 or res.statusCode >= 300
+        return callback new Error(res.statusCode), null
+      
+      callback null, res
+    
+    req.on 'error', (err) => callback err, null
+    
+    req
+  
+  _read: (res, callback) =>
+    content = ''
+    res.on 'data', (data) -> content += data
+
+    res.on 'end', =>
+      debug 'Received: %s', content
+      try
+        callback null, JSON.parse content
+      catch e
+        callback null, content
+  
   _dial: (options) =>
     call: (callback) =>
-      params =
-        headers: @_buildHeaders options
-        path: @_parsePath options
-        method: options.method
-      @_conn.apply params
-      
-      req = @_conn.request params
-      debug 'Sending: %s', util.inspect params,
-        showHidden: yes
-        depth: null
-      
-      if @timeout
-        req.on 'socket', (socket) =>
-          socket.setTimeout @timeout
-          socket.on 'timeout', -> req.abort()
-      
-      req.on 'response', (res) =>
-        if res.statusCode < 200 or res.statusCode >= 300
-          return callback new Error(res.statusCode), null
+      req = @_open options, (err, res) =>
+        return callback err if err?
         
         if options.openStdin is yes
           return callback null, new HttpDuplex req, res
@@ -126,17 +147,9 @@ module.exports = class Modem
         if options.isStream is yes
           return callback null, res
         
-        content = ''
-        res.on 'data', (data) -> content += data
-
-        res.on 'end', =>
-          debug 'Received: %s', content
-          try
-            callback null, JSON.parse content
-          catch e
-            callback null, content
-      
-      req.on 'error', (error) => callback error, null
+        @_read res, (err, content) =>
+          return callback err if err?
+          callback null, content
       
       return if options.openStdin
       return req.end() if !options.body?
