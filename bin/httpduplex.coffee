@@ -1,4 +1,3 @@
-util = require 'util'
 stream = require 'readable-stream'
 
 module.exports = class HttpDuplex extends stream.Duplex
@@ -13,11 +12,8 @@ module.exports = class HttpDuplex extends stream.Duplex
     @req = req
     @_output = res
     @emit 'response', res
-    res.on 'data', (c) =>
-      @_output.pause() unless @push(c)
-
-    res.on 'end', =>
-      @push null
+    res.on 'data', (c) => @_output.pause() unless @push c
+    res.on 'end', => @push null
   
   _read: (n) =>
     @_output.resume() if @_output
