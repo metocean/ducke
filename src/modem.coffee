@@ -1,4 +1,5 @@
-http = require 'follow-redirects'
+http = require 'http'
+https = require 'https'
 fs = require 'fs'
 resolve_path = require('path').resolve
 url = require 'url'
@@ -13,6 +14,9 @@ class UnixSocket
   
   apply: (params) =>
     params.socketPath = @_socketPath
+  
+  request: (params) =>
+    http.request params, ->
 
 class WebRequest
   constructor: (host, options) ->
@@ -32,6 +36,11 @@ class WebRequest
       params.key = @_https.key
       params.cert = @_https.cert
       params.ca = @_https.ca
+  
+  request: (params) =>
+    if @_https?
+      return https.request params, ->
+    http.request params, ->
 
 module.exports = class Modem
   constructor: (options) ->
@@ -96,7 +105,7 @@ module.exports = class Modem
       method: options.method
     @_conn.apply params
     
-    req = http[params.protocol[...-1]].request params, ->
+    req = @_conn.request params
     debug 'Sending: %s', util.inspect params,
       showHidden: yes
       depth: null
