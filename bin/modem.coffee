@@ -88,14 +88,6 @@ module.exports = class Modem
       params.cert = @_options.https.cert
       params.ca = @_options.https.ca
     
-    req = @buildRequest params, options, data, callback
-    
-    if typeof data is 'string' or Buffer.isBuffer data
-      req.write data
-    else data.pipe req if data
-    req.end() if not options.openStdin and (typeof data is 'string' or data is `undefined` or Buffer.isBuffer(data))
-
-  buildRequest: (params, options, data, callback) =>
     req = http[params.protocol[...-1]].request params, ->
     debug 'Sending: %s', util.inspect params,
       showHidden: yes
@@ -132,11 +124,13 @@ module.exports = class Modem
         callback null, json
 
     req.on 'error', (error) => callback error, null
-
-    req
+    
+    if typeof data is 'string' or Buffer.isBuffer data
+      req.write data
+    else data.pipe req if data
+    req.end() if not options.openStdin and (typeof data is 'string' or data is `undefined` or Buffer.isBuffer(data))
 
   demuxStream: (stream, stdout, stderr) =>
-    header = null
     stream.on 'readable', ->
       header = header or stream.read 8
       while header isnt null

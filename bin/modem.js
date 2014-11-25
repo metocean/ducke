@@ -23,7 +23,6 @@ debug = require('debug')('modem');
 module.exports = Modem = (function() {
   function Modem(options) {
     this.demuxStream = __bind(this.demuxStream, this);
-    this.buildRequest = __bind(this.buildRequest, this);
     this.dial = __bind(this.dial, this);
     this.post = __bind(this.post, this);
     this.get = __bind(this.get, this);
@@ -119,21 +118,6 @@ module.exports = Modem = (function() {
       params.cert = this._options.https.cert;
       params.ca = this._options.https.ca;
     }
-    req = this.buildRequest(params, options, data, callback);
-    if (typeof data === 'string' || Buffer.isBuffer(data)) {
-      req.write(data);
-    } else {
-      if (data) {
-        data.pipe(req);
-      }
-    }
-    if (!options.openStdin && (typeof data === 'string' || data === undefined || Buffer.isBuffer(data))) {
-      return req.end();
-    }
-  };
-
-  Modem.prototype.buildRequest = function(params, options, data, callback) {
-    var req;
     req = http[params.protocol.slice(0, -1)].request(params, function() {});
     debug('Sending: %s', util.inspect(params, {
       showHidden: true,
@@ -187,14 +171,21 @@ module.exports = Modem = (function() {
         return callback(error, null);
       };
     })(this));
-    return req;
+    if (typeof data === 'string' || Buffer.isBuffer(data)) {
+      req.write(data);
+    } else {
+      if (data) {
+        data.pipe(req);
+      }
+    }
+    if (!options.openStdin && (typeof data === 'string' || data === undefined || Buffer.isBuffer(data))) {
+      return req.end();
+    }
   };
 
   Modem.prototype.demuxStream = function(stream, stdout, stderr) {
-    var header;
-    header = null;
     return stream.on('readable', function() {
-      var payload, type, _results;
+      var header, payload, type, _results;
       header = header || stream.read(8);
       _results = [];
       while (header !== null) {
