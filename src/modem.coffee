@@ -118,11 +118,9 @@ module.exports = class Modem
     req.on 'response', (res) =>
       if res.statusCode < 200 or res.statusCode >= 300
         return callback new Error(res.statusCode), null
-      
       callback null, res
     
     req.on 'error', (err) => callback err, null
-    
     req
   
   _read: (res, callback) =>
@@ -136,26 +134,33 @@ module.exports = class Modem
       catch e
         callback null, content
   
+  _write: (req, data) =>
+    if typeof data is 'string' or Buffer.isBuffer data
+      req.write data
+      req.end()
+    
+    data.pipe req
+  
   _dial: (options) =>
-    call: (callback) =>
+    stream: (callback) =>
       req = @_open options, (err, res) =>
         return callback err if err?
-        
-        if options.openStdin is yes
-          return callback null, new HttpDuplex req, res
-        
-        if options.isStream is yes
-          return callback null, res
-        
+        callback null, res
+      
+      return req.end() if !options.body?
+      @_write req, options.body
+    
+    connect: (callback) =>
+      req = @_open options, (err, res) =>
+        return callback err if err?
+        callback null, new HttpDuplex req, res
+    
+    result: (callback) =>
+      req = @_open options, (err, res) =>
+        return callback err if err?
         @_read res, (err, content) =>
           return callback err if err?
           callback null, content
       
-      return if options.openStdin
       return req.end() if !options.body?
-      
-      if typeof options.body is 'string' or Buffer.isBuffer options.body
-        req.write options.body
-        req.end()
-      
-      options.body.pipe req
+      @_write req, options.body

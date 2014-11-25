@@ -35,14 +35,14 @@ module.exports = class Docke
   ping: (callback)  =>
     @_modem
       .get '/_ping'
-      .call (err, result) ->
+      .result (err, result) ->
         return callback err if err?
         callback null, result is 'OK'
   
   ps: (callback)  =>
     @_modem
       .get '/containers/json'
-      .call (err, containers) =>
+      .result (err, containers) =>
         return callback err if err?
         results = []
         errors = []
@@ -52,7 +52,7 @@ module.exports = class Docke
             tasks.push (cb) =>
               @_modem
                 .get "/containers/#{container.Id}/json"
-                .call (err, inspect) =>
+                .result (err, inspect) =>
                   if err?
                     errors.push err
                     return cb()
@@ -75,6 +75,6 @@ module.exports = class Docke
   test: (callback)  =>
     @_modem
       .get '/containers/json'
-      .call (err, result) =>
+      .result (err, result) =>
         return callback err if err?
         callback null, result

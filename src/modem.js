@@ -76,6 +76,7 @@ WebRequest = (function() {
 module.exports = Modem = (function() {
   function Modem(options) {
     this._dial = __bind(this._dial, this);
+    this._write = __bind(this._write, this);
     this._read = __bind(this._read, this);
     this._open = __bind(this._open, this);
     this._buildHeaders = __bind(this._buildHeaders, this);
@@ -221,20 +222,48 @@ module.exports = Modem = (function() {
     })(this));
   };
 
+  Modem.prototype._write = function(req, data) {
+    if (typeof data === 'string' || Buffer.isBuffer(data)) {
+      req.write(data);
+      req.end();
+    }
+    return data.pipe(req);
+  };
+
   Modem.prototype._dial = function(options) {
     return {
-      call: (function(_this) {
+      stream: (function(_this) {
         return function(callback) {
           var req;
           req = _this._open(options, function(err, res) {
             if (err != null) {
               return callback(err);
             }
-            if (options.openStdin === true) {
-              return callback(null, new HttpDuplex(req, res));
+            return callback(null, res);
+          });
+          if (options.body == null) {
+            return req.end();
+          }
+          return _this._write(req, options.body);
+        };
+      })(this),
+      connect: (function(_this) {
+        return function(callback) {
+          var req;
+          return req = _this._open(options, function(err, res) {
+            if (err != null) {
+              return callback(err);
             }
-            if (options.isStream === true) {
-              return callback(null, res);
+            return callback(null, new HttpDuplex(req, res));
+          });
+        };
+      })(this),
+      result: (function(_this) {
+        return function(callback) {
+          var req;
+          req = _this._open(options, function(err, res) {
+            if (err != null) {
+              return callback(err);
             }
             return _this._read(res, function(err, content) {
               if (err != null) {
@@ -243,17 +272,10 @@ module.exports = Modem = (function() {
               return callback(null, content);
             });
           });
-          if (options.openStdin) {
-            return;
-          }
           if (options.body == null) {
             return req.end();
           }
-          if (typeof options.body === 'string' || Buffer.isBuffer(options.body)) {
-            req.write(options.body);
-            req.end();
-          }
-          return options.body.pipe(req);
+          return _this._write(req, options.body);
         };
       })(this)
     };

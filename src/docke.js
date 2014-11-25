@@ -59,7 +59,7 @@ module.exports = Docke = (function() {
   }
 
   Docke.prototype.ping = function(callback) {
-    return this._modem.get('/_ping').call(function(err, result) {
+    return this._modem.get('/_ping').result(function(err, result) {
       if (err != null) {
         return callback(err);
       }
@@ -68,7 +68,7 @@ module.exports = Docke = (function() {
   };
 
   Docke.prototype.ps = function(callback) {
-    return this._modem.get('/containers/json').call((function(_this) {
+    return this._modem.get('/containers/json').result((function(_this) {
       return function(err, containers) {
         var container, errors, results, tasks, _fn, _i, _len;
         if (err != null) {
@@ -79,7 +79,7 @@ module.exports = Docke = (function() {
         tasks = [];
         _fn = function(container) {
           return tasks.push(function(cb) {
-            return _this._modem.get("/containers/" + container.Id + "/json").call(function(err, inspect) {
+            return _this._modem.get("/containers/" + container.Id + "/json").result(function(err, inspect) {
               if (err != null) {
                 errors.push(err);
                 return cb();
@@ -118,7 +118,7 @@ module.exports = Docke = (function() {
   };
 
   Docke.prototype.test = function(callback) {
-    return this._modem.get('/containers/json').call((function(_this) {
+    return this._modem.get('/containers/json').result((function(_this) {
       return function(err, result) {
         if (err != null) {
           return callback(err);
