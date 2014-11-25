@@ -33,40 +33,48 @@ module.exports = class Docke
     @_modem = new Modem options
   
   ping: (callback)  =>
-    @_modem.get '/_ping', (err, result) ->
-      return callback err if err?
-      callback null, result is 'OK'
+    @_modem
+      .get '/_ping'
+      .call (err, result) ->
+        return callback err if err?
+        callback null, result is 'OK'
   
   ps: (callback)  =>
-    @_modem.get '/containers/json', (err, containers) =>
-      return callback err if err?
-      results = []
-      errors = []
-      tasks = []
-      for container in containers
-        do (container) =>
-          tasks.push (cb) =>
-            @_modem.get "/containers/#{container.Id}/json", (err, inspect) =>
-              if err?
-                errors.push err
-                return cb()
-              results.push
-                container: container
-                inspect: inspect
-              cb()
-      parallel tasks, =>
-        
-        results.sort (a, b) ->
-          a = a.container.Names[0]
-          b = b.container.Names[0]
-          return 1 if a > b
-          return -1 if a < b
-          0
-        
-        return callback errors, results if errors.length > 0
-        callback null, results
+    @_modem
+      .get '/containers/json'
+      .call (err, containers) =>
+        return callback err if err?
+        results = []
+        errors = []
+        tasks = []
+        for container in containers
+          do (container) =>
+            tasks.push (cb) =>
+              @_modem
+                .get "/containers/#{container.Id}/json"
+                .call (err, inspect) =>
+                  if err?
+                    errors.push err
+                    return cb()
+                  results.push
+                    container: container
+                    inspect: inspect
+                  cb()
+        parallel tasks, =>
+          
+          results.sort (a, b) ->
+            a = a.container.Names[0]
+            b = b.container.Names[0]
+            return 1 if a > b
+            return -1 if a < b
+            0
+          
+          return callback errors, results if errors.length > 0
+          callback null, results
 
   test: (callback)  =>
-    @_modem.get '/containers/json', (err, result) =>
-      return callback err if err?
-      callback null, result
+    @_modem
+      .get '/containers/json'
+      .call (err, result) =>
+        return callback err if err?
+        callback null, result

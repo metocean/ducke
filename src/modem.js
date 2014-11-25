@@ -98,17 +98,17 @@ module.exports = Modem = (function() {
     }
   }
 
-  Modem.prototype.get = function(options, callback) {
+  Modem.prototype.get = function(options) {
     if (typeof options === 'string') {
       options = {
         path: options
       };
     }
     options.method = 'GET';
-    return this._dial(options, callback);
+    return this._dial(options);
   };
 
-  Modem.prototype.post = function(options, content, callback) {
+  Modem.prototype.post = function(options, content) {
     if (typeof options === 'string') {
       options = {
         path: options
@@ -117,10 +117,10 @@ module.exports = Modem = (function() {
     options.body = JSON.stringify(content);
     options.method = 'POST';
     options.contentType = 'application/json';
-    return this._dial(options, callback);
+    return this._dial(options);
   };
 
-  Modem.prototype.postFile = function(options, file, callback) {
+  Modem.prototype.postFile = function(options, file) {
     if (typeof options === 'string') {
       options = {
         path: options
@@ -132,7 +132,7 @@ module.exports = Modem = (function() {
     }
     options.body = file;
     options.contentType = 'application/tar';
-    return this._dail(options, callback);
+    return this._dail(options);
   };
 
   Modem.prototype._parsePath = function(options) {
@@ -160,73 +160,73 @@ module.exports = Modem = (function() {
     return headers;
   };
 
-  Modem.prototype._dial = function(options, callback) {
-    var params, req;
-    params = {
-      headers: this._buildHeaders(options),
-      path: this._parsePath(options),
-      method: options.method
-    };
-    this._conn.apply(params);
-    req = this._conn.request(params);
-    debug('Sending: %s', util.inspect(params, {
-      showHidden: true,
-      depth: null
-    }));
-    if (this.timeout) {
-      req.on('socket', (function(_this) {
-        return function(socket) {
-          socket.setTimeout(_this.timeout);
-          return socket.on('timeout', function() {
-            return req.abort();
-          });
-        };
-      })(this));
-    }
-    req.on('response', (function(_this) {
-      return function(res) {
-        var content;
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          return callback(new Error(res.statusCode), null);
-        }
-        if (options.openStdin === true) {
-          return callback(null, new HttpDuplex(req, res));
-        }
-        if (options.isStream === true) {
-          return callback(null, res);
-        }
-        content = '';
-        res.on('data', function(data) {
-          return content += data;
-        });
-        return res.on('end', function() {
-          var e;
-          debug('Received: %s', content);
-          try {
-            return callback(null, JSON.parse(content));
-          } catch (_error) {
-            e = _error;
-            return callback(null, content);
+  Modem.prototype._dial = function(options) {
+    return {
+      call: (function(_this) {
+        return function(callback) {
+          var params, req;
+          params = {
+            headers: _this._buildHeaders(options),
+            path: _this._parsePath(options),
+            method: options.method
+          };
+          _this._conn.apply(params);
+          req = _this._conn.request(params);
+          debug('Sending: %s', util.inspect(params, {
+            showHidden: true,
+            depth: null
+          }));
+          if (_this.timeout) {
+            req.on('socket', function(socket) {
+              socket.setTimeout(_this.timeout);
+              return socket.on('timeout', function() {
+                return req.abort();
+              });
+            });
           }
-        });
-      };
-    })(this));
-    req.on('error', (function(_this) {
-      return function(error) {
-        return callback(error, null);
-      };
-    })(this));
-    if (options.openStdin) {
-      return;
-    }
-    if (options.body == null) {
-      return req.end();
-    }
-    if (typeof options.body === 'string' || Buffer.isBuffer(options.body)) {
-      req.write(options.body);
-      req.end();
-    }
-    return options.body.pipe(req);
+          req.on('response', function(res) {
+            var content;
+            if (res.statusCode < 200 || res.statusCode >= 300) {
+              return callback(new Error(res.statusCode), null);
+            }
+            if (options.openStdin === true) {
+              return callback(null, new HttpDuplex(req, res));
+            }
+            if (options.isStream === true) {
+              return callback(null, res);
+            }
+            content = '';
+            res.on('data', function(data) {
+              return content += data;
+            });
+            return res.on('end', function() {
+              var e;
+              debug('Received: %s', content);
+              try {
+                return callback(null, JSON.parse(content));
+              } catch (_error) {
+                e = _error;
+                return callback(null, content);
+              }
+            });
+          });
+          req.on('error', function(error) {
+            return callback(error, null);
+          });
+          if (options.openStdin) {
+            return;
+          }
+          if (options.body == null) {
+            return req.end();
+          }
+          if (typeof options.body === 'string' || Buffer.isBuffer(options.body)) {
+            req.write(options.body);
+            req.end();
+          }
+          return options.body.pipe(req);
+        };
+      })(this)
+    };
   };
 
   return Modem;

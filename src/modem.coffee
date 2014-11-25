@@ -57,21 +57,21 @@ module.exports = class Modem
     else
       @_conn = new WebRequest host, options
   
-  get: (options, callback) =>
+  get: (options) =>
     if typeof options is 'string'
       options = path: options
     options.method = 'GET'
-    @_dial options, callback
+    @_dial options
   
-  post: (options, content, callback) =>
+  post: (options, content) =>
     if typeof options is 'string'
       options = path: options
     options.body = JSON.stringify content
     options.method = 'POST'
     options.contentType = 'application/json'
-    @_dial options, callback
+    @_dial options
   
-  postFile: (options, file, callback) =>
+  postFile: (options, file) =>
     if typeof options is 'string'
       options = path: options
     options.method = 'POST'
@@ -79,7 +79,7 @@ module.exports = class Modem
       file = fs.readFileSync resolve_path file
     options.body = file
     options.contentType = 'application/tar'
-    @_dail options, callback
+    @_dail options
   
   _parsePath: (options) =>
     return options.path if !@version?
@@ -98,50 +98,51 @@ module.exports = class Modem
       headers['Content-Length'] = options.body.length
     headers
   
-  _dial: (options, callback) =>
-    params =
-      headers: @_buildHeaders options
-      path: @_parsePath options
-      method: options.method
-    @_conn.apply params
-    
-    req = @_conn.request params
-    debug 'Sending: %s', util.inspect params,
-      showHidden: yes
-      depth: null
-    
-    if @timeout
-      req.on 'socket', (socket) =>
-        socket.setTimeout @timeout
-        socket.on 'timeout', -> req.abort()
-    
-    req.on 'response', (res) =>
-      if res.statusCode < 200 or res.statusCode >= 300
-        return callback new Error(res.statusCode), null
+  _dial: (options) =>
+    call: (callback) =>
+      params =
+        headers: @_buildHeaders options
+        path: @_parsePath options
+        method: options.method
+      @_conn.apply params
       
-      if options.openStdin is yes
-        return callback null, new HttpDuplex req, res
+      req = @_conn.request params
+      debug 'Sending: %s', util.inspect params,
+        showHidden: yes
+        depth: null
       
-      if options.isStream is yes
-        return callback null, res
+      if @timeout
+        req.on 'socket', (socket) =>
+          socket.setTimeout @timeout
+          socket.on 'timeout', -> req.abort()
       
-      content = ''
-      res.on 'data', (data) -> content += data
+      req.on 'response', (res) =>
+        if res.statusCode < 200 or res.statusCode >= 300
+          return callback new Error(res.statusCode), null
+        
+        if options.openStdin is yes
+          return callback null, new HttpDuplex req, res
+        
+        if options.isStream is yes
+          return callback null, res
+        
+        content = ''
+        res.on 'data', (data) -> content += data
 
-      res.on 'end', =>
-        debug 'Received: %s', content
-        try
-          callback null, JSON.parse content
-        catch e
-          callback null, content
-    
-    req.on 'error', (error) => callback error, null
-    
-    return if options.openStdin
-    return req.end() if !options.body?
-    
-    if typeof options.body is 'string' or Buffer.isBuffer options.body
-      req.write options.body
-      req.end()
-    
-    options.body.pipe req
+        res.on 'end', =>
+          debug 'Received: %s', content
+          try
+            callback null, JSON.parse content
+          catch e
+            callback null, content
+      
+      req.on 'error', (error) => callback error, null
+      
+      return if options.openStdin
+      return req.end() if !options.body?
+      
+      if typeof options.body is 'string' or Buffer.isBuffer options.body
+        req.write options.body
+        req.end()
+      
+      options.body.pipe req
