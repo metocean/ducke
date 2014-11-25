@@ -8,8 +8,12 @@
   "dependencies": {
     "colors": "1.0.3",
     "cson": "1.6.1",
+    "debug": "^2.1.0",
     "dockerode": "2.0.4",
-    "minimist": "1.1.0"
+    "follow-redirects": "0.0.3",
+    "minimist": "1.1.0",
+    "querystring": "^0.2.0",
+    "readable-stream": "^1.0.33"
   },
   "repository": {
     "type": "git",

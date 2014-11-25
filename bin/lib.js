@@ -36,7 +36,7 @@ parseConfig = function(args) {
   result = {
     host: process.env.DOCKER_HOST || 'unix:///var/run/docker.sock',
     port: process.env.DOCKER_PORT || 2376,
-    tls: process.env.DOCKER_TLS_VERIFY !== '' || false,
+    https: process.env.DOCKER_TLS_VERIFY !== '' || false,
     cert_path: process.env.DOCKER_CERT_PATH
   };
   url_parse = require('url').parse;
@@ -50,18 +50,19 @@ buildOptions = function(config) {
   if (config.host.protocol === 'unix:') {
     result.socketPath = config.host.path;
   } else {
-    result.protocol = config.host.protocol.slice(0, -1);
-    result.host = config.host.hostname;
-    result.port = config.port || config.host.port || 2376;
-    if (result.protocol === 'tcp') {
-      result.protocol = config.tls ? 'https' : 'http';
-    }
+    result.host = config.host;
+    result.port = config.port || config.host.port;
   }
   if (config.cert_path != null) {
     fs = require('fs');
     result.ca = fs.readFileSync("" + config.cert_path + "/ca.pem");
     result.cert = fs.readFileSync("" + config.cert_path + "/cert.pem");
     result.key = fs.readFileSync("" + config.cert_path + "/key.pem");
+    result.https = {
+      cert: result.cert,
+      key: result.key,
+      ca: result.ca
+    };
   }
   return result;
 };
@@ -165,6 +166,17 @@ commands = {
         stream.pipe(process.stdout);
         return process.stdin.pipe(stream);
       });
+    });
+  },
+  test: function() {
+    var Modem, m;
+    Modem = require('./modem');
+    m = new Modem(options);
+    return m.get('/containers/json', function(err, containers) {
+      if (err != null) {
+        return console.error(err);
+      }
+      return console.log(containers);
     });
   }
 };

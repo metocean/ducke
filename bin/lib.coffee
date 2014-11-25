@@ -25,7 +25,7 @@ parseConfig = (args) ->
   result =
     host: process.env.DOCKER_HOST or 'unix:///var/run/docker.sock'
     port: process.env.DOCKER_PORT or 2376
-    tls: process.env.DOCKER_TLS_VERIFY isnt '' or no
+    https: process.env.DOCKER_TLS_VERIFY isnt '' or no
     cert_path: process.env.DOCKER_CERT_PATH
   url_parse = require('url').parse
   result.host = url_parse result.host
@@ -36,17 +36,18 @@ buildOptions = (config) ->
   if config.host.protocol is 'unix:'
     result.socketPath = config.host.path
   else
-    result.protocol = config.host.protocol[...-1]
-    result.host = config.host.hostname
-    result.port = config.port or config.host.port or 2376
-    if result.protocol is 'tcp'
-      result.protocol = if config.tls then 'https' else 'http'
+    result.host = config.host
+    result.port = config.port or config.host.port
   
   if config.cert_path?
     fs = require 'fs'
     result.ca = fs.readFileSync "#{config.cert_path}/ca.pem"
     result.cert = fs.readFileSync "#{config.cert_path}/cert.pem"
     result.key = fs.readFileSync "#{config.cert_path}/key.pem"
+    result.https =
+      cert: result.cert
+      key: result.key
+      ca: result.ca
   
   result
 
@@ -118,6 +119,14 @@ commands =
           stream.setEncoding 'utf8'
           stream.pipe process.stdout
           process.stdin.pipe stream
+
+  test: ->
+    Modem = require './modem'
+    m = new Modem options
+    m.get '/containers/json', (err, containers) ->
+      return console.error err if err?
+      console.log containers
+
 
 minimist = require 'minimist'
 args = minimist process.argv[2..],
