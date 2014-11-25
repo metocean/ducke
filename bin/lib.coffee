@@ -10,6 +10,10 @@ Commands:
 
 """
 
+url_parse = require('url').parse
+fs = require 'fs'
+Modem = require './modem'
+
 parallel = (tasks, callback) ->
   count = tasks.length
   result = (cb) ->
@@ -21,29 +25,16 @@ parallel = (tasks, callback) ->
   result(callback) if callback?
   result
 
-parseConfig = (args) ->
+buildOptions = (args) ->
   result =
-    host: process.env.DOCKER_HOST or 'unix:///var/run/docker.sock'
-    port: process.env.DOCKER_PORT or 2376
-    https: process.env.DOCKER_TLS_VERIFY isnt '' or no
-    cert_path: process.env.DOCKER_CERT_PATH
-  url_parse = require('url').parse
-  result.host = url_parse result.host
-  result
-
-buildOptions = (config) ->
-  result = {}
-  if config.host.protocol is 'unix:'
-    result.socketPath = config.host.path
-  else
-    result.host = config.host
-    result.port = config.port or config.host.port
+    host: url_parse process.env.DOCKER_HOST or 'unix:///var/run/docker.sock'
+    port: process.env.DOCKER_PORT
   
-  if config.cert_path?
-    fs = require 'fs'
-    result.ca = fs.readFileSync "#{config.cert_path}/ca.pem"
-    result.cert = fs.readFileSync "#{config.cert_path}/cert.pem"
-    result.key = fs.readFileSync "#{config.cert_path}/key.pem"
+  if process.env.DOCKER_TLS_VERIFY isnt '' or no and process.env.DOCKER_CERT_PATH?
+    path = process.env.DOCKER_CERT_PATH
+    result.ca = fs.readFileSync "#{path}/ca.pem"
+    result.cert = fs.readFileSync "#{path}/cert.pem"
+    result.key = fs.readFileSync "#{path}/key.pem"
     result.https =
       cert: result.cert
       key: result.key
@@ -53,7 +44,7 @@ buildOptions = (config) ->
 
 commands =
   ping: ->
-    docker.ping (err, result) ->
+    modem.get '/_ping', (err, result) ->
       return console.error err if err?
       if result is 'OK'
         console.log 'Docker is up'.green
@@ -62,21 +53,19 @@ commands =
         process.exit 1
   
   ps: ->
-    docker.listContainers (err, containers) ->
+    modem.get '/containers/json', (err, containers) ->
       return console.error err if err?
       results = []
       tasks = []
       for container in containers
         do (container) ->
           tasks.push (cb) ->
-            docker
-              .getContainer container.Id
-              .inspect (err, inspect) ->
-                console.error err if err?
-                results.push
-                  container: container
-                  inspect: inspect
-                cb()
+            modem.get "/containers/#{container.Id}/json", (err, inspect) ->
+              console.error err if err?
+              results.push
+                container: container
+                inspect: inspect
+              cb()
       parallel tasks, ->
         results.sort (a, b) ->
           a = a.container.Names[0]
@@ -88,44 +77,11 @@ commands =
           ip = result.inspect.NetworkSettings.IPAddress.toString()
           ip += ' ' while ip.length < 16
           console.log "#{ip.blue} #{result.container.Names[0][1..]}"
-  
-  exec: ->
-    a = process.argv[3..]
-    
-    if a.length is 0
-      console.error "Command exec requires a container name"
-      process.exit 1
-    
-    name = a[0]
-    
-    a = a[1..]
-    a = ['/bin/bash'] if a.length is 0
-    
-    options =
-      AttachStdin: yes
-      AttachStdout: yes
-      AttachStderr: yes
-      OpenStdin: yes
-      StdinOnce: yes
-      Tty: no
-      Cmd: a
-    
-    docker
-      .getContainer name
-      .exec options, (err, exec) ->
-        return console.error err if err?
-        exec.start (err, stream) ->
-          return console.error err if err?
-          stream.setEncoding 'utf8'
-          stream.pipe process.stdout
-          process.stdin.pipe stream
 
   test: ->
-    Modem = require './modem'
-    m = new Modem options
-    m.get '/containers/json', (err, containers) ->
+    modem.get '/containers/json', (err, result) ->
       return console.error err if err?
-      console.log containers
+      console.log result
 
 
 minimist = require 'minimist'
@@ -141,9 +97,7 @@ if !commands[command]?
   console.error usage
   process.exit 1
 
-config = parseConfig args
-options = buildOptions config
-Docker = require 'dockerode'
-docker = new Docker options
+options = buildOptions args
+modem = new Modem options
 
 commands[command]()
