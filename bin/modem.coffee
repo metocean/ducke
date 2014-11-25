@@ -31,62 +31,60 @@ module.exports = class Modem
   get: (options, callback) =>
     options = path: options if typeof options is 'string'
     options.method = 'GET'
-    @dial options, callback
+    @_dial options, callback
   
-  post: (options, callback) =>
+  post: (options, content, callback) =>
+    options.body = JSON.stringify content
     options.method = 'POST'
-    @dial options, callback
-
-  dial: (options, callback) =>
+    options.contentType = 'application/json'
+    @_dial options, callback
+  
+  postFile: (options, file, callback) =>
+    options.method = 'POST'
+    if typeof file is 'string'
+      file = fs.readFileSync resolve_path file
+    options.body = file
+    options.contentType = 'application/tar'
+    @_dail options, callback
+  
+  _buildHeaders: (options) =>
     headers = {}
-    if options.authconfig
+    if options.authconfig?
       buffer = new Buffer JSON.stringify options.authconfig
       headers['X-Registry-Auth'] = buffer.toString 'base64'
-    
-    data = undefined
-    if options.file
-      if typeof options.file is 'string'
-        data = fs.readFileSync resolve_path options.file
-      else
-        data = options.file
-      headers['Content-Type'] = 'application/tar'
-    
-    else if options.body and options.method is 'POST'
-      data = JSON.stringify options.body
-      headers['Content-Type'] = 'application/json'
-    
-    if typeof data is 'string'
-      headers['Content-Length'] = Buffer.byteLength data
-    else if Buffer.isBuffer data
-      headers['Content-Length'] = data.length
+    if options.contentType?
+      headers['Content-Type'] = options.contentType
+    if typeof options.body is 'string'
+      headers['Content-Length'] = Buffer.byteLength options.body
+    else if Buffer.isBuffer options.body
+      headers['Content-Length'] = options.body.length
+    headers
+  
+  _buildParams: (headers, path, method) =>
+    path = "/#{@version}#{options.path}" if @version?
     
     params =
       headers: headers
+      path: path
+      method: method
     
-    path = options.path
-    path = "/#{@version}#{options.path}" if @version?
     if @socketPath
       params.socketPath = @socketPath
-      params.path = path
-      params.method = options.method
     else
-      address = url.format
-        protocol: @host.protocol
-        hostname: @host.hostname
-        port: @host.port
-      address = url.resolve address, path
-      address = url.parse address
-      
-      params.protocol = address.protocol
-      params.hostname = address.hostname
-      params.port = address.port
-      params.path = address.path
-      params.method = options.method
+      params.protocol = @host.protocol
+      params.hostname = @host.hostname
+      params.port = @host.port
     
     if @_options.https?
       params.key = @_options.https.key
       params.cert = @_options.https.cert
       params.ca = @_options.https.ca
+    
+    params
+
+  _dial: (options, callback) =>
+    headers = @_buildHeaders options
+    params = @_buildParams headers, options.path, options.method
     
     req = http[params.protocol[...-1]].request params, ->
     debug 'Sending: %s', util.inspect params,
@@ -125,10 +123,14 @@ module.exports = class Modem
 
     req.on 'error', (error) => callback error, null
     
-    if typeof data is 'string' or Buffer.isBuffer data
-      req.write data
-    else data.pipe req if data
-    req.end() if not options.openStdin and (typeof data is 'string' or data is `undefined` or Buffer.isBuffer(data))
+    return if options.openStdin
+    return req.end() if !options.body?
+    
+    if typeof options.body is 'string' or Buffer.isBuffer options.body
+      req.write options.body
+      req.end()
+    
+    options.body.pipe req
 
   demuxStream: (stream, stdout, stderr) =>
     stream.on 'readable', ->

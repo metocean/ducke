@@ -23,7 +23,10 @@ debug = require('debug')('modem');
 module.exports = Modem = (function() {
   function Modem(options) {
     this.demuxStream = __bind(this.demuxStream, this);
-    this.dial = __bind(this.dial, this);
+    this._dial = __bind(this._dial, this);
+    this._buildParams = __bind(this._buildParams, this);
+    this._buildHeaders = __bind(this._buildHeaders, this);
+    this.postFile = __bind(this.postFile, this);
     this.post = __bind(this.post, this);
     this.get = __bind(this.get, this);
     var host;
@@ -56,68 +59,73 @@ module.exports = Modem = (function() {
       };
     }
     options.method = 'GET';
-    return this.dial(options, callback);
+    return this._dial(options, callback);
   };
 
-  Modem.prototype.post = function(options, callback) {
+  Modem.prototype.post = function(options, content, callback) {
+    options.body = JSON.stringify(content);
     options.method = 'POST';
-    return this.dial(options, callback);
+    options.contentType = 'application/json';
+    return this._dial(options, callback);
   };
 
-  Modem.prototype.dial = function(options, callback) {
-    var address, buffer, data, headers, params, path, req;
+  Modem.prototype.postFile = function(options, file, callback) {
+    options.method = 'POST';
+    if (typeof file === 'string') {
+      file = fs.readFileSync(resolve_path(file));
+    }
+    options.body = file;
+    options.contentType = 'application/tar';
+    return this._dail(options, callback);
+  };
+
+  Modem.prototype._buildHeaders = function(options) {
+    var buffer, headers;
     headers = {};
-    if (options.authconfig) {
+    if (options.authconfig != null) {
       buffer = new Buffer(JSON.stringify(options.authconfig));
       headers['X-Registry-Auth'] = buffer.toString('base64');
     }
-    data = void 0;
-    if (options.file) {
-      if (typeof options.file === 'string') {
-        data = fs.readFileSync(resolve_path(options.file));
-      } else {
-        data = options.file;
-      }
-      headers['Content-Type'] = 'application/tar';
-    } else if (options.body && options.method === 'POST') {
-      data = JSON.stringify(options.body);
-      headers['Content-Type'] = 'application/json';
+    if (options.contentType != null) {
+      headers['Content-Type'] = options.contentType;
     }
-    if (typeof data === 'string') {
-      headers['Content-Length'] = Buffer.byteLength(data);
-    } else if (Buffer.isBuffer(data)) {
-      headers['Content-Length'] = data.length;
+    if (typeof options.body === 'string') {
+      headers['Content-Length'] = Buffer.byteLength(options.body);
+    } else if (Buffer.isBuffer(options.body)) {
+      headers['Content-Length'] = options.body.length;
     }
-    params = {
-      headers: headers
-    };
-    path = options.path;
+    return headers;
+  };
+
+  Modem.prototype._buildParams = function(headers, path, method) {
+    var params;
     if (this.version != null) {
       path = "/" + this.version + options.path;
     }
+    params = {
+      headers: headers,
+      path: path,
+      method: method
+    };
     if (this.socketPath) {
       params.socketPath = this.socketPath;
-      params.path = path;
-      params.method = options.method;
     } else {
-      address = url.format({
-        protocol: this.host.protocol,
-        hostname: this.host.hostname,
-        port: this.host.port
-      });
-      address = url.resolve(address, path);
-      address = url.parse(address);
-      params.protocol = address.protocol;
-      params.hostname = address.hostname;
-      params.port = address.port;
-      params.path = address.path;
-      params.method = options.method;
+      params.protocol = this.host.protocol;
+      params.hostname = this.host.hostname;
+      params.port = this.host.port;
     }
     if (this._options.https != null) {
       params.key = this._options.https.key;
       params.cert = this._options.https.cert;
       params.ca = this._options.https.ca;
     }
+    return params;
+  };
+
+  Modem.prototype._dial = function(options, callback) {
+    var headers, params, req;
+    headers = this._buildHeaders(options);
+    params = this._buildParams(headers, options.path, options.method);
     req = http[params.protocol.slice(0, -1)].request(params, function() {});
     debug('Sending: %s', util.inspect(params, {
       showHidden: true,
@@ -171,16 +179,17 @@ module.exports = Modem = (function() {
         return callback(error, null);
       };
     })(this));
-    if (typeof data === 'string' || Buffer.isBuffer(data)) {
-      req.write(data);
-    } else {
-      if (data) {
-        data.pipe(req);
-      }
+    if (options.openStdin) {
+      return;
     }
-    if (!options.openStdin && (typeof data === 'string' || data === undefined || Buffer.isBuffer(data))) {
+    if (options.body == null) {
       return req.end();
     }
+    if (typeof options.body === 'string' || Buffer.isBuffer(options.body)) {
+      req.write(options.body);
+      req.end();
+    }
+    return options.body.pipe(req);
   };
 
   Modem.prototype.demuxStream = function(stream, stdout, stderr) {
