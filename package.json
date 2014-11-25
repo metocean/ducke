@@ -17,6 +17,7 @@
     "type": "git",
     "url": "git@github.com:metocean/docke.git"
   },
+  "main": "index.js",
   "author": "Thomas Coats",
   "license": "MIT",
   "bugs": {
