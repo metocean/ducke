@@ -11,7 +11,7 @@ minimist = require('minimist');
 
 Docke = require('../src/docke');
 
-usage = "\nUsage: " + 'docke'.cyan + " command\n\nCommands:\n  \n  ping      Test the connection to docker\n  ps        List the running dockers and their ip addresses\n  inspect   Show details about a container\n  logs      Attach to the logs of a container\n  run       Run an image interactively\n";
+usage = "\nUsage: " + 'docke'.cyan + " command\n\nCommands:\n  \n  ping      Test the connection to docker\n  ps        List the running dockers and their ip addresses\n  inspect   Show details about a container\n  logs      Attach to the logs of a container\n  run       Start a shell inside a new container\n  tap       Start a shell inside an existing container\n";
 
 buildOptions = function(args) {
   var path, result;
@@ -127,6 +127,22 @@ commands = {
     }
     image = args._[1];
     return docke.run(image, function(err, code) {
+      if (err != null) {
+        console.error(err);
+        process.exit(1);
+      }
+      return process.exit(code);
+    });
+  },
+  tap: function() {
+    var container;
+    if (args._.length !== 2) {
+      console.error("docke tap requires container name");
+      console.error(usage);
+      process.exit(1);
+    }
+    container = args._[1];
+    return docke.tap(container, function(err, code) {
       if (err != null) {
         console.error(err);
         process.exit(1);

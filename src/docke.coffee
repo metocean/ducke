@@ -1,23 +1,6 @@
 Modem = require './modem'
 demux = require './demuxstream'
 
-buildOptions = (args) ->
-  result =
-    host: url_parse process.env.DOCKER_HOST or 'unix:///var/run/docker.sock'
-    port: process.env.DOCKER_PORT
-  
-  if process.env.DOCKER_TLS_VERIFY isnt '' or no and process.env.DOCKER_CERT_PATH?
-    path = process.env.DOCKER_CERT_PATH
-    result.ca = fs.readFileSync "#{path}/ca.pem"
-    result.cert = fs.readFileSync "#{path}/cert.pem"
-    result.key = fs.readFileSync "#{path}/key.pem"
-    result.https =
-      cert: result.cert
-      key: result.key
-      ca: result.ca
-  
-  result
-
 parallel = (tasks, callback) ->
   count = tasks.length
   result = (cb) ->
@@ -33,7 +16,7 @@ module.exports = class Docke
   constructor: (options) ->
     @_modem = new Modem options
   
-  ping: (callback)  =>
+  ping: (callback) =>
     @_modem
       .get '/_ping'
       .result (err, result) ->
@@ -110,8 +93,6 @@ module.exports = class Docke
       .post "/exec/#{id}/start", params
       .connect callback
   
-  #docke.execResize /exec/(id)/resize
-  
   run: (image, callback)  =>
     params =
       AttachStdin: yes
@@ -133,7 +114,6 @@ module.exports = class Docke
           .connect (err, stream) =>
             return callback err if err?
             stream.pipe process.stdout
-            #demux stream, process.stdout, process.stderr
             
             process.stdin.resume()
             process.stdin.setEncoding 'utf8'

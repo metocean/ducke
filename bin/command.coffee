@@ -14,7 +14,8 @@ Commands:
   ps        List the running dockers and their ip addresses
   inspect   Show details about a container
   logs      Attach to the logs of a container
-  run       Run an image interactively
+  run       Start a shell inside a new container
+  tap       Start a shell inside an existing container
 
 """
 
@@ -107,6 +108,20 @@ commands =
     image = args._[1]
     
     docke.run image, (err, code) ->
+      if err?
+        console.error err
+        process.exit 1
+      process.exit code
+  
+  tap: ->
+    if args._.length isnt 2
+      console.error "docke tap requires container name"
+      console.error usage
+      process.exit 1
+    
+    container = args._[1]
+    
+    docke.tap container, (err, code) ->
       if err?
         console.error err
         process.exit 1
