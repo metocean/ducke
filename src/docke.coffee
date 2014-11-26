@@ -93,7 +93,32 @@ module.exports = class Docke
       .post "/exec/#{id}/start", params
       .connect callback
   
-  run: (image, callback)  =>
+  startContainer: (id, callback) =>
+    @_modem
+      .post "/containers/#{id}/start", {}
+      .result callback
+  
+  waitContainer: (id, callback) =>
+    @_modem
+      .post "/containers/#{id}/wait", {}
+      .result callback
+  
+  deleteContainer: (id, callback) =>
+    @_modem
+      .delete "/containers/#{id}"
+      .result callback
+  
+  attachContainer: (id, callback) =>
+    @_modem
+    .post "/containers/#{id}/attach?stream=true&stdin=true&stdout=true&stderr=true", {}
+    .connect callback
+  
+  createContainer: (params, callback) =>
+    @_modem
+      .post '/containers/create', params
+      .result callback
+  
+  run: (image, stdin, stdout, stderr, callback)  =>
     params =
       AttachStdin: yes
       AttachStdout: yes
@@ -104,36 +129,27 @@ module.exports = class Docke
       Cmd: ['bash']
       Image: image
     
-    @_modem
-      .post '/containers/create', params
-      .result (err, container) =>
+    @createContainer params, (err, container) =>
+      return callback err if err?
+      @attachContainer container.Id, (err, stream) =>
         return callback err if err?
+        stream.pipe stdout
         
-        @_modem
-          .post "/containers/#{container.Id}/attach?stream=true&stdin=true&stdout=true&stderr=true", {}
-          .connect (err, stream) =>
+        wasRaw = process.isRaw
+        stdin.resume()
+        stdin.setEncoding 'utf8'
+        stdin.setRawMode yes
+        stdin.pipe stream
+        
+        @startContainer container.Id, (err) =>
+          return callback err if err?
+          @waitContainer container.Id, (err, result) =>
             return callback err if err?
-            stream.pipe process.stdout
-            
-            process.stdin.resume()
-            process.stdin.setEncoding 'utf8'
-            process.stdin.setRawMode yes
-            process.stdin.pipe stream
-            
-            @_modem
-              .post "/containers/#{container.Id}/start", {}
-              .result (err) =>
-                return callback err if err?
-                @_modem
-                  .post "/containers/#{container.Id}/wait", {}
-                  .result (err, result) =>
-                    return callback err if err?
-                    process.stdin.removeAllListeners()
-                    process.stdin.resume()
-                    stream.end()
-                    @_modem
-                      .delete "/containers/#{container.Id}"
-                      .result (err) ->
-                        return callback err if err?
-                        callback null, result.StatusCode
-            
+            stdin.removeAllListeners()
+            stdin.setRawMode wasRaw
+            stdin.resume()
+            stream.end()
+            @deleteContainer container.Id, (err) ->
+              return callback err if err?
+              callback null, result.StatusCode
+      

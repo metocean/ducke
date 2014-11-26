@@ -68,7 +68,7 @@ commands =
   
   inspect: ->
     if args._.length isnt 2
-      console.error "docke inspect requires container name or id"
+      console.error "docke inspect requires container name"
       console.error usage
       process.exit 1
     
@@ -82,7 +82,7 @@ commands =
   
   logs: ->
     if args._.length isnt 2
-      console.error "docke logs requires container name or id"
+      console.error "docke logs requires container name"
       console.error usage
       process.exit 1
     
@@ -107,7 +107,7 @@ commands =
     
     image = args._[1]
     
-    docke.run image, (err, code) ->
+    docke.run image, process.stdin, process.stdout, process.stderr, (err, code) ->
       if err?
         console.error err
         process.exit 1

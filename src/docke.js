@@ -35,6 +35,11 @@ parallel = function(tasks, callback) {
 module.exports = Docke = (function() {
   function Docke(options) {
     this.run = __bind(this.run, this);
+    this.createContainer = __bind(this.createContainer, this);
+    this.attachContainer = __bind(this.attachContainer, this);
+    this.deleteContainer = __bind(this.deleteContainer, this);
+    this.waitContainer = __bind(this.waitContainer, this);
+    this.startContainer = __bind(this.startContainer, this);
     this.startExec = __bind(this.startExec, this);
     this.exec = __bind(this.exec, this);
     this.resize = __bind(this.resize, this);
@@ -145,7 +150,27 @@ module.exports = Docke = (function() {
     return this._modem.post("/exec/" + id + "/start", params).connect(callback);
   };
 
-  Docke.prototype.run = function(image, callback) {
+  Docke.prototype.startContainer = function(id, callback) {
+    return this._modem.post("/containers/" + id + "/start", {}).result(callback);
+  };
+
+  Docke.prototype.waitContainer = function(id, callback) {
+    return this._modem.post("/containers/" + id + "/wait", {}).result(callback);
+  };
+
+  Docke.prototype.deleteContainer = function(id, callback) {
+    return this._modem["delete"]("/containers/" + id).result(callback);
+  };
+
+  Docke.prototype.attachContainer = function(id, callback) {
+    return this._modem.post("/containers/" + id + "/attach?stream=true&stdin=true&stdout=true&stderr=true", {}).connect(callback);
+  };
+
+  Docke.prototype.createContainer = function(params, callback) {
+    return this._modem.post('/containers/create', params).result(callback);
+  };
+
+  Docke.prototype.run = function(image, stdin, stdout, stderr, callback) {
     var params;
     params = {
       AttachStdin: true,
@@ -157,32 +182,35 @@ module.exports = Docke = (function() {
       Cmd: ['bash'],
       Image: image
     };
-    return this._modem.post('/containers/create', params).result((function(_this) {
+    return this.createContainer(params, (function(_this) {
       return function(err, container) {
         if (err != null) {
           return callback(err);
         }
-        return _this._modem.post("/containers/" + container.Id + "/attach?stream=true&stdin=true&stdout=true&stderr=true", {}).connect(function(err, stream) {
+        return _this.attachContainer(container.Id, function(err, stream) {
+          var wasRaw;
           if (err != null) {
             return callback(err);
           }
-          stream.pipe(process.stdout);
-          process.stdin.resume();
-          process.stdin.setEncoding('utf8');
-          process.stdin.setRawMode(true);
-          process.stdin.pipe(stream);
-          return _this._modem.post("/containers/" + container.Id + "/start", {}).result(function(err) {
+          stream.pipe(stdout);
+          wasRaw = process.isRaw;
+          stdin.resume();
+          stdin.setEncoding('utf8');
+          stdin.setRawMode(true);
+          stdin.pipe(stream);
+          return _this.startContainer(container.Id, function(err) {
             if (err != null) {
               return callback(err);
             }
-            return _this._modem.post("/containers/" + container.Id + "/wait", {}).result(function(err, result) {
+            return _this.waitContainer(container.Id, function(err, result) {
               if (err != null) {
                 return callback(err);
               }
-              process.stdin.removeAllListeners();
-              process.stdin.resume();
+              stdin.removeAllListeners();
+              stdin.setRawMode(wasRaw);
+              stdin.resume();
               stream.end();
-              return _this._modem["delete"]("/containers/" + container.Id).result(function(err) {
+              return _this.deleteContainer(container.Id, function(err) {
                 if (err != null) {
                   return callback(err);
                 }

@@ -84,7 +84,7 @@ commands = {
   inspect: function() {
     var container;
     if (args._.length !== 2) {
-      console.error("docke inspect requires container name or id");
+      console.error("docke inspect requires container name");
       console.error(usage);
       process.exit(1);
     }
@@ -100,7 +100,7 @@ commands = {
   logs: function() {
     var container, resize;
     if (args._.length !== 2) {
-      console.error("docke logs requires container name or id");
+      console.error("docke logs requires container name");
       console.error(usage);
       process.exit(1);
     }
@@ -126,7 +126,7 @@ commands = {
       process.exit(1);
     }
     image = args._[1];
-    return docke.run(image, function(err, code) {
+    return docke.run(image, process.stdin, process.stdout, process.stderr, function(err, code) {
       if (err != null) {
         console.error(err);
         process.exit(1);
