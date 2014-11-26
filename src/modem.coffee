@@ -72,6 +72,12 @@ module.exports = class Modem
     options.contentType = 'application/json'
     @_connect options
   
+  delete: (options) =>
+    if typeof options is 'string'
+      options = path: options
+    options.method = 'DELETE'
+    @_connect options
+  
   postFile: (options, file) =>
     if typeof options is 'string'
       options = path: options
@@ -106,7 +112,6 @@ module.exports = class Modem
       method: options.method
     @_conn.apply params
     
-    console.log params
     req = @_conn.request params
     debug 'Sending: %s', util.inspect params,
       showHidden: yes
@@ -138,14 +143,12 @@ module.exports = class Modem
   
   _write: (req, data) =>
     if typeof data is 'string' or Buffer.isBuffer data
-      console.log data
       req.write data
       req.end()
       return
     data.pipe req
   
   _connect: (options) =>
-    console.log options
     stream: (callback) =>
       req = @_dial options, (err, res) =>
         return callback err if err?

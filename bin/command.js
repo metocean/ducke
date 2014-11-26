@@ -11,7 +11,7 @@ minimist = require('minimist');
 
 Docke = require('../src/docke');
 
-usage = "\nUsage: " + 'docke'.cyan + " command\n\nCommands:\n  \n  ping      Test the connection to docker\n  ps        List the running dockers and their ip addresses\n";
+usage = "\nUsage: " + 'docke'.cyan + " command\n\nCommands:\n  \n  ping      Test the connection to docker\n  ps        List the running dockers and their ip addresses\n  inspect   Show details about a container\n  logs      Attach to the logs of a container\n  run       Run an image interactively\n";
 
 buildOptions = function(args) {
   var path, result;
@@ -56,9 +56,9 @@ commands = {
         process.exit(1);
       }
       if (isUp) {
-        return console.log('Docker is up'.green);
+        return console.log('docker is up'.green);
       } else {
-        return console.error('Docker is down'.red);
+        return console.error('docker is down'.red);
       }
     });
   },
@@ -82,14 +82,14 @@ commands = {
     });
   },
   inspect: function() {
-    var name;
+    var container;
     if (args._.length !== 2) {
-      console.error("Inspect requires container name or id");
+      console.error("docke inspect requires container name or id");
       console.error(usage);
       process.exit(1);
     }
-    name = args._[1];
-    return docke.inspect(name, function(err, inspect) {
+    container = args._[1];
+    return docke.inspect(container, function(err, inspect) {
       if (err != null) {
         console.error(err);
         process.exit(1);
@@ -98,19 +98,19 @@ commands = {
     });
   },
   logs: function() {
-    var name, resize;
+    var container, resize;
     if (args._.length !== 2) {
-      console.error("Logs requires container name or id");
+      console.error("docke logs requires container name or id");
       console.error(usage);
       process.exit(1);
     }
-    name = args._[1];
+    container = args._[1];
     resize = function() {
-      return docke.resize(name, process.stdout.rows, process.stdout.columns, function() {});
+      return docke.resize(container, process.stdout.rows, process.stdout.columns, function() {});
     };
     process.stdout.on('resize', resize);
     resize();
-    return docke.logs(name, function(err, stream) {
+    return docke.logs(container, function(err, stream) {
       if (err != null) {
         console.error(err);
         process.exit(1);
@@ -118,53 +118,20 @@ commands = {
       return stream.pipe(process.stdout);
     });
   },
-  bash: function() {
-    var name;
+  run: function() {
+    var image;
     if (args._.length !== 2) {
-      console.error("Bash requires container name or id");
+      console.error("docke run requires image name");
       console.error(usage);
       process.exit(1);
     }
-    name = args._[1];
-    return docke.exec(name, '/bin/bash', (function(_this) {
-      return function(err, result) {
-        return console.log(result);
-      };
-    })(this));
-  },
-  test: function() {
-    var CTRL_P, CTRL_Q, isRaw, previousKey;
-    return docke.test(function(err, stream) {
-      if (err != null) {
-        console.error(err);
-        return process.exit(1);
-      }
-    });
-    isRaw = process.isRaw;
-    previousKey = null;
-    CTRL_P = '\u0010';
-    CTRL_Q = '\u0011';
-    return docke.startExec('f388afb4856eafc217ff4883c0de3ed580fa4420547daea2ef88f848dbaa4891', function(err, stream) {
-      console.log('1');
+    image = args._[1];
+    return docke.run(image, function(err, code) {
       if (err != null) {
         console.error(err);
         process.exit(1);
       }
-      stream.pipe(process.stdout);
-      process.stdin.resume();
-      process.stdin.setEncoding('utf8');
-      process.stdin.setRawMode(true);
-      process.stdin.pipe(stream);
-      return process.stdin.on('data', function(key) {
-        if (previousKey === CTRL_P && key === CTRL_Q) {
-          process.stdin.removeAllListeners();
-          process.stdin.setRawMode(isRaw);
-          process.stdin.resume();
-          stream.end();
-          process.exit();
-        }
-        return previousKey = key;
-      });
+      return process.exit(code);
     });
   }
 };

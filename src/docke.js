@@ -54,7 +54,7 @@ parallel = function(tasks, callback) {
 
 module.exports = Docke = (function() {
   function Docke(options) {
-    this.test = __bind(this.test, this);
+    this.run = __bind(this.run, this);
     this.startExec = __bind(this.startExec, this);
     this.exec = __bind(this.exec, this);
     this.resize = __bind(this.resize, this);
@@ -165,23 +165,17 @@ module.exports = Docke = (function() {
     return this._modem.post("/exec/" + id + "/start", params).connect(callback);
   };
 
-  Docke.prototype.test = function(callback) {
+  Docke.prototype.run = function(image, callback) {
     var params;
     params = {
-      Hostname: '',
-      User: '',
       AttachStdin: true,
       AttachStdout: true,
       AttachStderr: true,
       Tty: true,
       OpenStdin: true,
       StdinOnce: false,
-      Env: null,
       Cmd: ['bash'],
-      Dns: ['8.8.8.8', '8.8.4.4'],
-      Image: 'ubuntu',
-      Volumes: {},
-      VolumesFrom: ''
+      Image: image
     };
     return this._modem.post('/containers/create', params).result((function(_this) {
       return function(err, container) {
@@ -189,7 +183,6 @@ module.exports = Docke = (function() {
           return callback(err);
         }
         return _this._modem.post("/containers/" + container.Id + "/attach?stream=true&stdin=true&stdout=true&stderr=true", {}).connect(function(err, stream) {
-          var CTRL_P, CTRL_Q, isRaw, previousKey;
           if (err != null) {
             return callback(err);
           }
@@ -198,25 +191,24 @@ module.exports = Docke = (function() {
           process.stdin.setEncoding('utf8');
           process.stdin.setRawMode(true);
           process.stdin.pipe(stream);
-          isRaw = process.isRaw;
-          previousKey = null;
-          CTRL_P = '\u0010';
-          CTRL_Q = '\u0011';
-          process.stdin.on('data', function(key) {
-            if (previousKey === CTRL_P && key === CTRL_Q) {
-              process.stdin.removeAllListeners();
-              process.stdin.setRawMode(isRaw);
-              process.stdin.resume();
-              stream.end();
-              process.exit();
-            }
-            return previousKey = key;
-          });
           return _this._modem.post("/containers/" + container.Id + "/start", {}).result(function(err) {
             if (err != null) {
               return callback(err);
             }
-            return callback(null, stream);
+            return _this._modem.post("/containers/" + container.Id + "/wait", {}).result(function(err, result) {
+              if (err != null) {
+                return callback(err);
+              }
+              process.stdin.removeAllListeners();
+              process.stdin.resume();
+              stream.end();
+              return _this._modem["delete"]("/containers/" + container.Id).result(function(err) {
+                if (err != null) {
+                  return callback(err);
+                }
+                return callback(null, result.StatusCode);
+              });
+            });
           });
         });
       };

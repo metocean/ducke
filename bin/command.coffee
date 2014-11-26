@@ -12,6 +12,9 @@ Commands:
   
   ping      Test the connection to docker
   ps        List the running dockers and their ip addresses
+  inspect   Show details about a container
+  logs      Attach to the logs of a container
+  run       Run an image interactively
 
 """
 
@@ -48,9 +51,9 @@ commands =
         console.error err
         process.exit 1
       if isUp
-        console.log 'Docker is up'.green
+        console.log 'docker is up'.green
       else
-        console.error 'Docker is down'.red
+        console.error 'docker is down'.red
   
   ps: ->
     docke.ps (err, results) ->
@@ -64,13 +67,13 @@ commands =
   
   inspect: ->
     if args._.length isnt 2
-      console.error "Inspect requires container name or id"
+      console.error "docke inspect requires container name or id"
       console.error usage
       process.exit 1
     
-    name = args._[1]
+    container = args._[1]
     
-    docke.inspect name, (err, inspect) ->
+    docke.inspect container, (err, inspect) ->
       if err?
         console.error err
         process.exit 1
@@ -78,67 +81,36 @@ commands =
   
   logs: ->
     if args._.length isnt 2
-      console.error "Logs requires container name or id"
+      console.error "docke logs requires container name or id"
       console.error usage
       process.exit 1
     
-    name = args._[1]
+    container = args._[1]
     
     resize = ->
-      docke.resize name, process.stdout.rows, process.stdout.columns, ->
+      docke.resize container, process.stdout.rows, process.stdout.columns, ->
     process.stdout.on 'resize', resize
     resize()
     
-    docke.logs name, (err, stream) ->
+    docke.logs container, (err, stream) ->
       if err?
         console.error err
         process.exit 1
       stream.pipe process.stdout
   
-  bash: ->
+  run: ->
     if args._.length isnt 2
-      console.error "Bash requires container name or id"
+      console.error "docke run requires image name"
       console.error usage
       process.exit 1
     
-    name = args._[1]
+    image = args._[1]
     
-    docke.exec name, '/bin/bash', (err, result) =>
-      console.log result
-  
-  test: ->
-    return docke.test (err, stream) ->
+    docke.run image, (err, code) ->
       if err?
         console.error err
         process.exit 1
-    
-    isRaw = process.isRaw
-    previousKey = null
-    CTRL_P = '\u0010'
-    CTRL_Q = '\u0011'
-    
-    docke.startExec 'f388afb4856eafc217ff4883c0de3ed580fa4420547daea2ef88f848dbaa4891', (err, stream) ->
-      console.log '1'
-      
-      if err?
-        console.error err
-        process.exit 1
-      
-      stream.pipe process.stdout
-      
-      process.stdin.resume()
-      process.stdin.setEncoding 'utf8'
-      process.stdin.setRawMode yes
-      process.stdin.pipe stream
-      
-      process.stdin.on 'data', (key) ->
-        if previousKey is CTRL_P and key is CTRL_Q
-          process.stdin.removeAllListeners()
-          process.stdin.setRawMode isRaw
-          process.stdin.resume()
-          stream.end()
-          process.exit()
-        previousKey = key
+      process.exit code
 
 command = args._[0]
 if !commands[command]?

@@ -82,6 +82,7 @@ module.exports = Modem = (function() {
     this._buildHeaders = __bind(this._buildHeaders, this);
     this._parsePath = __bind(this._parsePath, this);
     this.postFile = __bind(this.postFile, this);
+    this["delete"] = __bind(this["delete"], this);
     this.post = __bind(this.post, this);
     this.get = __bind(this.get, this);
     var host;
@@ -122,6 +123,16 @@ module.exports = Modem = (function() {
     }
     options.method = 'POST';
     options.contentType = 'application/json';
+    return this._connect(options);
+  };
+
+  Modem.prototype["delete"] = function(options) {
+    if (typeof options === 'string') {
+      options = {
+        path: options
+      };
+    }
+    options.method = 'DELETE';
     return this._connect(options);
   };
 
@@ -173,7 +184,6 @@ module.exports = Modem = (function() {
       method: options.method
     };
     this._conn.apply(params);
-    console.log(params);
     req = this._conn.request(params);
     debug('Sending: %s', util.inspect(params, {
       showHidden: true,
@@ -229,7 +239,6 @@ module.exports = Modem = (function() {
 
   Modem.prototype._write = function(req, data) {
     if (typeof data === 'string' || Buffer.isBuffer(data)) {
-      console.log(data);
       req.write(data);
       req.end();
       return;
@@ -238,7 +247,6 @@ module.exports = Modem = (function() {
   };
 
   Modem.prototype._connect = function(options) {
-    console.log(options);
     return {
       stream: (function(_this) {
         return function(callback) {

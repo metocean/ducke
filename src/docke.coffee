@@ -112,22 +112,16 @@ module.exports = class Docke
   
   #docke.execResize /exec/(id)/resize
   
-  test: (callback)  =>
+  run: (image, callback)  =>
     params =
-      Hostname: ''
-      User: ''
       AttachStdin: yes
       AttachStdout: yes
       AttachStderr: yes
       Tty: yes
       OpenStdin: yes
       StdinOnce: no
-      Env: null
       Cmd: ['bash']
-      Dns: ['8.8.8.8', '8.8.4.4']
-      Image: 'ubuntu'
-      Volumes: {}
-      VolumesFrom: ''
+      Image: image
     
     @_modem
       .post '/containers/create', params
@@ -140,29 +134,26 @@ module.exports = class Docke
             return callback err if err?
             stream.pipe process.stdout
             #demux stream, process.stdout, process.stderr
-
+            
             process.stdin.resume()
             process.stdin.setEncoding 'utf8'
             process.stdin.setRawMode yes
             process.stdin.pipe stream
             
-            isRaw = process.isRaw
-            previousKey = null
-            CTRL_P = '\u0010'
-            CTRL_Q = '\u0011'
-            
-            process.stdin.on 'data', (key) ->
-              if previousKey is CTRL_P and key is CTRL_Q
-                process.stdin.removeAllListeners()
-                process.stdin.setRawMode isRaw
-                process.stdin.resume()
-                stream.end()
-                process.exit()
-              previousKey = key
-            
             @_modem
               .post "/containers/#{container.Id}/start", {}
               .result (err) =>
                 return callback err if err?
-                callback null, stream
+                @_modem
+                  .post "/containers/#{container.Id}/wait", {}
+                  .result (err, result) =>
+                    return callback err if err?
+                    process.stdin.removeAllListeners()
+                    process.stdin.resume()
+                    stream.end()
+                    @_modem
+                      .delete "/containers/#{container.Id}"
+                      .result (err) ->
+                        return callback err if err?
+                        callback null, result.StatusCode
             
