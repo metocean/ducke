@@ -1,4 +1,5 @@
 Modem = require './modem'
+demux = require './demuxstream'
 
 buildOptions = (args) ->
   result =
@@ -72,9 +73,96 @@ module.exports = class Docke
           return callback errors, results if errors.length > 0
           callback null, results
 
-  test: (callback)  =>
+  inspect: (id, callback) =>
     @_modem
-      .get '/containers/json'
+      .get "/containers/#{id}/json"
+      .result callback
+  
+  logs: (id, callback) =>
+    @_modem
+      .get "/containers/#{id}/logs?stderr=1&stdout=1&follow=1&tail=10"
+      .stream callback
+  
+  resize: (id, rows, columns, callback) =>
+    @_modem
+      .get "/containers/#{id}/resize?h=#{rows}&w=#{columns}"
       .result (err, result) =>
         return callback err if err?
-        callback null, result
+        callback null, result is 'OK'
+  
+  exec: (id, cmd, callback) =>
+    params =
+      AttachStdin: yes
+      AttachStdout: yes
+      AttachStderr: yes
+      Tty: yes
+      Cmd: cmd.split ' '
+      Container: id
+    @_modem
+      .post "/containers/#{id}/exec", params
+      .result callback
+  
+  startExec: (id, callback) =>
+    params =
+      Detach: no
+      Tty: yes
+    @_modem
+      .post "/exec/#{id}/start", params
+      .connect callback
+  
+  #docke.execResize /exec/(id)/resize
+  
+  test: (callback)  =>
+    params =
+      Hostname: ''
+      User: ''
+      AttachStdin: yes
+      AttachStdout: yes
+      AttachStderr: yes
+      Tty: yes
+      OpenStdin: yes
+      StdinOnce: no
+      Env: null
+      Cmd: ['bash']
+      Dns: ['8.8.8.8', '8.8.4.4']
+      Image: 'ubuntu'
+      Volumes: {}
+      VolumesFrom: ''
+    
+    @_modem
+      .post '/containers/create', params
+      .result (err, container) =>
+        return callback err if err?
+        
+        @_modem
+          .post "/containers/#{container.Id}/attach?stream=true&stdin=true&stdout=true&stderr=true", {}
+          .connect (err, stream) =>
+            return callback err if err?
+            stream.pipe process.stdout
+            #demux stream, process.stdout, process.stderr
+
+            process.stdin.resume()
+            process.stdin.setEncoding 'utf8'
+            process.stdin.setRawMode yes
+            process.stdin.pipe stream
+            
+            isRaw = process.isRaw
+            previousKey = null
+            CTRL_P = '\u0010'
+            CTRL_Q = '\u0011'
+            
+            process.stdin.on 'data', (key) ->
+              if previousKey is CTRL_P and key is CTRL_Q
+                process.stdin.removeAllListeners()
+                process.stdin.setRawMode isRaw
+                process.stdin.resume()
+                stream.end()
+                process.exit()
+              previousKey = key
+            
+            @_modem
+              .post "/containers/#{container.Id}/start", {}
+              .result (err) =>
+                return callback err if err?
+                callback null, stream
+            

@@ -75,10 +75,10 @@ WebRequest = (function() {
 
 module.exports = Modem = (function() {
   function Modem(options) {
-    this._dial = __bind(this._dial, this);
+    this._connect = __bind(this._connect, this);
     this._write = __bind(this._write, this);
     this._read = __bind(this._read, this);
-    this._open = __bind(this._open, this);
+    this._dial = __bind(this._dial, this);
     this._buildHeaders = __bind(this._buildHeaders, this);
     this._parsePath = __bind(this._parsePath, this);
     this.postFile = __bind(this.postFile, this);
@@ -108,7 +108,7 @@ module.exports = Modem = (function() {
       };
     }
     options.method = 'GET';
-    return this._dial(options);
+    return this._connect(options);
   };
 
   Modem.prototype.post = function(options, content) {
@@ -117,10 +117,12 @@ module.exports = Modem = (function() {
         path: options
       };
     }
-    options.body = JSON.stringify(content);
+    if (content != null) {
+      options.body = JSON.stringify(content);
+    }
     options.method = 'POST';
     options.contentType = 'application/json';
-    return this._dial(options);
+    return this._connect(options);
   };
 
   Modem.prototype.postFile = function(options, file) {
@@ -135,7 +137,7 @@ module.exports = Modem = (function() {
     }
     options.body = file;
     options.contentType = 'application/tar';
-    return this._dail(options);
+    return this._connect(options);
   };
 
   Modem.prototype._parsePath = function(options) {
@@ -163,7 +165,7 @@ module.exports = Modem = (function() {
     return headers;
   };
 
-  Modem.prototype._open = function(options, callback) {
+  Modem.prototype._dial = function(options, callback) {
     var params, req;
     params = {
       headers: this._buildHeaders(options),
@@ -171,6 +173,7 @@ module.exports = Modem = (function() {
       method: options.method
     };
     this._conn.apply(params);
+    console.log(params);
     req = this._conn.request(params);
     debug('Sending: %s', util.inspect(params, {
       showHidden: true,
@@ -189,7 +192,9 @@ module.exports = Modem = (function() {
     req.on('response', (function(_this) {
       return function(res) {
         if (res.statusCode < 200 || res.statusCode >= 300) {
-          return callback(new Error(res.statusCode), null);
+          return _this._read(res, function(err, content) {
+            return callback(new Error("" + res.statusCode + " " + content), null);
+          });
         }
         return callback(null, res);
       };
@@ -224,21 +229,25 @@ module.exports = Modem = (function() {
 
   Modem.prototype._write = function(req, data) {
     if (typeof data === 'string' || Buffer.isBuffer(data)) {
+      console.log(data);
       req.write(data);
       req.end();
+      return;
     }
     return data.pipe(req);
   };
 
-  Modem.prototype._dial = function(options) {
+  Modem.prototype._connect = function(options) {
+    console.log(options);
     return {
       stream: (function(_this) {
         return function(callback) {
           var req;
-          req = _this._open(options, function(err, res) {
+          req = _this._dial(options, function(err, res) {
             if (err != null) {
               return callback(err);
             }
+            res.setEncoding('utf8');
             return callback(null, res);
           });
           if (options.body == null) {
@@ -250,18 +259,19 @@ module.exports = Modem = (function() {
       connect: (function(_this) {
         return function(callback) {
           var req;
-          return req = _this._open(options, function(err, res) {
+          req = _this._dial(options, function(err, res) {
             if (err != null) {
               return callback(err);
             }
             return callback(null, new HttpDuplex(req, res));
           });
+          return req.end();
         };
       })(this),
       result: (function(_this) {
         return function(callback) {
           var req;
-          req = _this._open(options, function(err, res) {
+          req = _this._dial(options, function(err, res) {
             if (err != null) {
               return callback(err);
             }

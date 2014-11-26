@@ -62,12 +62,83 @@ commands =
         ip += ' ' while ip.length < 16
         console.log "#{ip.blue} #{result.container.Names[0][1..]}"
   
-  test: ->
-    docke.test (err, result) ->
+  inspect: ->
+    if args._.length isnt 2
+      console.error "Inspect requires container name or id"
+      console.error usage
+      process.exit 1
+    
+    name = args._[1]
+    
+    docke.inspect name, (err, inspect) ->
       if err?
         console.error err
         process.exit 1
+      console.log inspect
+  
+  logs: ->
+    if args._.length isnt 2
+      console.error "Logs requires container name or id"
+      console.error usage
+      process.exit 1
+    
+    name = args._[1]
+    
+    resize = ->
+      docke.resize name, process.stdout.rows, process.stdout.columns, ->
+    process.stdout.on 'resize', resize
+    resize()
+    
+    docke.logs name, (err, stream) ->
+      if err?
+        console.error err
+        process.exit 1
+      stream.pipe process.stdout
+  
+  bash: ->
+    if args._.length isnt 2
+      console.error "Bash requires container name or id"
+      console.error usage
+      process.exit 1
+    
+    name = args._[1]
+    
+    docke.exec name, '/bin/bash', (err, result) =>
       console.log result
+  
+  test: ->
+    return docke.test (err, stream) ->
+      if err?
+        console.error err
+        process.exit 1
+    
+    isRaw = process.isRaw
+    previousKey = null
+    CTRL_P = '\u0010'
+    CTRL_Q = '\u0011'
+    
+    docke.startExec 'f388afb4856eafc217ff4883c0de3ed580fa4420547daea2ef88f848dbaa4891', (err, stream) ->
+      console.log '1'
+      
+      if err?
+        console.error err
+        process.exit 1
+      
+      stream.pipe process.stdout
+      
+      process.stdin.resume()
+      process.stdin.setEncoding 'utf8'
+      process.stdin.setRawMode yes
+      process.stdin.pipe stream
+      
+      process.stdin.on 'data', (key) ->
+        if previousKey is CTRL_P and key is CTRL_Q
+          process.stdin.removeAllListeners()
+          process.stdin.setRawMode isRaw
+          process.stdin.resume()
+          stream.end()
+          process.exit()
+        previousKey = key
 
 command = args._[0]
 if !commands[command]?

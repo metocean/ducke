@@ -81,13 +81,90 @@ commands = {
       return _results;
     });
   },
-  test: function() {
-    return docke.test(function(err, result) {
+  inspect: function() {
+    var name;
+    if (args._.length !== 2) {
+      console.error("Inspect requires container name or id");
+      console.error(usage);
+      process.exit(1);
+    }
+    name = args._[1];
+    return docke.inspect(name, function(err, inspect) {
       if (err != null) {
         console.error(err);
         process.exit(1);
       }
-      return console.log(result);
+      return console.log(inspect);
+    });
+  },
+  logs: function() {
+    var name, resize;
+    if (args._.length !== 2) {
+      console.error("Logs requires container name or id");
+      console.error(usage);
+      process.exit(1);
+    }
+    name = args._[1];
+    resize = function() {
+      return docke.resize(name, process.stdout.rows, process.stdout.columns, function() {});
+    };
+    process.stdout.on('resize', resize);
+    resize();
+    return docke.logs(name, function(err, stream) {
+      if (err != null) {
+        console.error(err);
+        process.exit(1);
+      }
+      return stream.pipe(process.stdout);
+    });
+  },
+  bash: function() {
+    var name;
+    if (args._.length !== 2) {
+      console.error("Bash requires container name or id");
+      console.error(usage);
+      process.exit(1);
+    }
+    name = args._[1];
+    return docke.exec(name, '/bin/bash', (function(_this) {
+      return function(err, result) {
+        return console.log(result);
+      };
+    })(this));
+  },
+  test: function() {
+    var CTRL_P, CTRL_Q, isRaw, previousKey;
+    return docke.test(function(err, stream) {
+      if (err != null) {
+        console.error(err);
+        return process.exit(1);
+      }
+    });
+    isRaw = process.isRaw;
+    previousKey = null;
+    CTRL_P = '\u0010';
+    CTRL_Q = '\u0011';
+    return docke.startExec('f388afb4856eafc217ff4883c0de3ed580fa4420547daea2ef88f848dbaa4891', function(err, stream) {
+      console.log('1');
+      if (err != null) {
+        console.error(err);
+        process.exit(1);
+      }
+      stream.pipe(process.stdout);
+      process.stdin.resume();
+      process.stdin.setEncoding('utf8');
+      process.stdin.setRawMode(true);
+      process.stdin.pipe(stream);
+      return process.stdin.on('data', function(key) {
+        if (previousKey === CTRL_P && key === CTRL_Q) {
+          process.stdin.removeAllListeners();
+          process.stdin.setRawMode(isRaw);
+          process.stdin.resume();
+          stream.end();
+          process.exit();
+        }
+        return previousKey = key;
+      });
     });
   }
 };
