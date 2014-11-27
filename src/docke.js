@@ -201,7 +201,7 @@ module.exports = Docke = (function() {
   Docke.prototype.image = function(id) {
     return {
       run: (function(_this) {
-        return function(stdin, stdout, stderr, callback) {
+        return function(stdin, stdout, stderr, run, fin) {
           var params;
           params = {
             AttachStdin: true,
@@ -215,14 +215,16 @@ module.exports = Docke = (function() {
           };
           return _this.createContainer(params, function(err, container) {
             if (err != null) {
-              return callback(err);
+              return run(err);
             }
+            id = container.Id;
             container = _this.container(container.Id);
             return container.attach(function(err, stream) {
               var wasRaw;
               if (err != null) {
-                return callback(err);
+                return run(err);
               }
+              run(null, id);
               stream.pipe(stdout);
               wasRaw = process.isRaw;
               stdin.resume();
@@ -232,7 +234,7 @@ module.exports = Docke = (function() {
               return container.start(function(err) {
                 var kill;
                 if (err != null) {
-                  return callback(err);
+                  return fin(err);
                 }
                 kill = function(signal) {
                   stream.unpipe(stdout);
@@ -255,13 +257,13 @@ module.exports = Docke = (function() {
                 });
                 return container.wait(function(err, result) {
                   if (err != null) {
-                    return callback(err);
+                    return fin(err);
                   }
                   return container.rm(function(err) {
                     if (err != null) {
-                      return callback(err);
+                      return fin(err);
                     }
-                    return callback(null, result.StatusCode);
+                    return fin(null, result.StatusCode);
                   });
                 });
               });

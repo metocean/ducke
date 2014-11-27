@@ -103,9 +103,13 @@ commands = {
         process.exit(1);
       }
       if (isUp) {
-        return console.log('docker is up'.green);
+        console.log();
+        console.log('  docker is up'.green);
+        return console.log();
       } else {
-        return console.error('docker is down'.red);
+        console.error();
+        console.error('  docker is down'.red);
+        return console.error();
       }
     });
   },
@@ -116,15 +120,17 @@ commands = {
       process.exit(1);
     }
     return docke.ps(function(err, results) {
-      var image, name, result, status, _i, _len, _results;
+      var image, name, result, status, _i, _len;
       if (err != null) {
         console.error(err);
         process.exit(1);
       }
       if (results.length === 0) {
-        console.log("no docker containers");
+        console.error();
+        console.error('  There are no docker containers on this system');
+        console.error();
       }
-      _results = [];
+      console.log();
       for (_i = 0, _len = results.length; _i < _len; _i++) {
         result = results[_i];
         status = result.inspect.State.Running ? result.inspect.NetworkSettings.IPAddress.toString().blue : 'stopped'.red;
@@ -133,9 +139,9 @@ commands = {
         }
         name = result.container.Names[0].slice(1);
         image = result.inspect.Config.Image;
-        _results.push(console.log("" + status + " " + name + " (" + image + ")"));
+        console.log("  " + status + " " + name + " (" + image + ")");
       }
-      return _results;
+      return console.log();
     });
   },
   inspect: function() {
@@ -164,7 +170,7 @@ commands = {
       _fn(arg);
     }
     return series(tasks, function() {
-      return console.log(results);
+      return console.log(JSON.stringify(results, null, 2));
     });
   },
   logs: function() {
@@ -188,20 +194,39 @@ commands = {
     return _results;
   },
   run: function() {
-    var image;
+    var fin, image, run;
     if (args.length !== 1) {
       console.error("docke run requires an image name");
       console.error(usage);
       process.exit(1);
     }
     image = args[0];
-    return docke.image(image).run(process.stdin, process.stdout, process.stderr, function(err, code) {
+    run = function(err, id) {
+      if (err != null) {
+        console.error(err);
+        process.exit(1);
+      }
+      return docke.container(id).inspect(function(err, inspect) {
+        var name;
+        if (err != null) {
+          console.error(err);
+          process.exit(1);
+        }
+        name = inspect.Name.slice(1);
+        image = inspect.Config.Image;
+        console.log();
+        console.log("  " + 'running'.green + " " + name + " (" + image + ")");
+        return console.log();
+      });
+    };
+    fin = function(err, code) {
       if (err != null) {
         console.error(err);
         process.exit(1);
       }
       return process.exit(code);
-    });
+    };
+    return docke.image(image).run(process.stdin, process.stdout, process.stderr, run, fin);
   },
   exec: function() {
     var container;
@@ -211,12 +236,24 @@ commands = {
       process.exit(1);
     }
     container = args[0];
-    return docke.container(container).exec(process.stdin, process.stdout, process.stderr, function(err, code) {
+    return docke.container(container).inspect(function(err, inspect) {
+      var image, name;
       if (err != null) {
         console.error(err);
         process.exit(1);
       }
-      return process.exit(code);
+      name = inspect.Name.slice(1);
+      image = inspect.Config.Image;
+      console.log();
+      console.log("  " + 'exec'.green + " " + name + " (" + image + ")");
+      console.log();
+      return docke.container(container).exec(process.stdin, process.stdout, process.stderr, function(err, code) {
+        if (err != null) {
+          console.error(err);
+          process.exit(1);
+        }
+        return process.exit(code);
+      });
     });
   },
   stop: function() {
@@ -227,27 +264,28 @@ commands = {
       process.exit(1);
     }
     tasks = [];
+    console.log();
     _fn = function(arg) {
       return tasks.push(function(cb) {
         return docke.container(arg).stop(function(err) {
           if (err != null) {
             if (err.statusCode === 404) {
-              console.error("" + arg.red + " is an unknown container");
+              console.error("  " + arg.red + " is an unknown container");
               return cb();
             }
             if (err.statusCode === 304) {
-              console.error("" + arg.red + " has already been stopped");
+              console.error("  " + arg.red + " has already been stopped");
               return cb();
             }
             if (err.statusCode === 500) {
-              console.error("could not stop " + arg.red);
+              console.error("  could not stop " + arg.red);
               return cb();
             }
             console.error(err);
             console.error(JSON.stringify(err));
             process.exit(1);
           }
-          console.log("" + 'stopped'.green + " " + arg);
+          console.log("  " + 'stopped'.green + " " + arg);
           return cb();
         });
       });
@@ -256,7 +294,9 @@ commands = {
       arg = args[_i];
       _fn(arg);
     }
-    return series(tasks, function() {});
+    return series(tasks, function() {
+      return console.log();
+    });
   },
   rm: function() {
     var arg, tasks, _fn, _i, _len;
@@ -266,23 +306,24 @@ commands = {
       process.exit(1);
     }
     tasks = [];
+    console.log();
     _fn = function(arg) {
       return tasks.push(function(cb) {
         return docke.container(arg).rm(function(err) {
           if (err != null) {
             if (err.statusCode === 404) {
-              console.error("" + arg.red + " is an unknown container");
+              console.error("  " + arg.red + " is an unknown container");
               return cb();
             }
             if (err.statusCode === 500) {
-              console.error("could not delete " + arg.red);
+              console.error("  could not delete " + arg.red);
               return cb();
             }
             console.error(err);
             console.error(JSON.stringify(err));
             process.exit(1);
           }
-          console.log("" + 'deleted'.green + " " + arg);
+          console.log("  " + 'deleted'.green + " " + arg);
           return cb();
         });
       });
@@ -291,7 +332,9 @@ commands = {
       arg = args[_i];
       _fn(arg);
     }
-    return series(tasks, function() {});
+    return series(tasks, function() {
+      return console.log();
+    });
   },
   kill: function() {
     var arg, tasks, _fn, _i, _len;
@@ -301,23 +344,24 @@ commands = {
       process.exit(1);
     }
     tasks = [];
+    console.log();
     _fn = function(arg) {
       return tasks.push(function(cb) {
         return docke.container(arg).kill(function(err) {
           if (err != null) {
             if (err.statusCode === 404) {
-              console.error("" + arg.red + " is an unknown container");
+              console.error("  " + arg.red + " is an unknown container");
               return cb();
             }
             if (err.statusCode === 500) {
-              console.error("could not send SIGTERM to " + arg.red);
+              console.error("  could not send SIGTERM to " + arg.red);
               return cb();
             }
             console.error(err);
             console.error(JSON.stringify(err));
             process.exit(1);
           }
-          console.log("" + 'killed'.green + " " + arg);
+          console.log("  " + 'killed'.green + " " + arg);
           return cb();
         });
       });
@@ -326,7 +370,9 @@ commands = {
       arg = args[_i];
       _fn(arg);
     }
-    return series(tasks, function() {});
+    return series(tasks, function() {
+      return console.log();
+    });
   }
 };
 

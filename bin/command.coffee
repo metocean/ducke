@@ -79,9 +79,13 @@ commands =
         console.error err
         process.exit 1
       if isUp
-        console.log 'docker is up'.green
+        console.log()
+        console.log '  docker is up'.green
+        console.log()
       else
-        console.error 'docker is down'.red
+        console.error()
+        console.error '  docker is down'.red
+        console.error()
   
   ps: ->
     if args.length isnt 0
@@ -95,8 +99,11 @@ commands =
         process.exit 1
       
       if results.length is 0
-        console.log "no docker containers"
+        console.error()
+        console.error '  There are no docker containers on this system'
+        console.error()
       
+      console.log()
       for result in results
         status = if result.inspect.State.Running
           result.inspect.NetworkSettings.IPAddress.toString().blue
@@ -107,7 +114,8 @@ commands =
         name = result.container.Names[0][1..]
         image = result.inspect.Config.Image
         
-        console.log "#{status} #{name} (#{image})"
+        console.log "  #{status} #{name} (#{image})"
+      console.log()
   
   inspect: ->
     if args.length is 0
@@ -130,7 +138,7 @@ commands =
               results.push inspect
               cb()
     
-    series tasks, -> console.log results
+    series tasks, -> console.log JSON.stringify results, null, 2
   
   logs: ->
     if args.length is 0
@@ -155,13 +163,35 @@ commands =
     
     image = args[0]
     
+    run = (err, id) ->
+      if err?
+        console.error err
+        process.exit 1
+      
+      docke
+        .container id
+        .inspect (err, inspect) ->
+          if err?
+            console.error err
+            process.exit 1
+          
+          name = inspect.Name[1..]
+          image = inspect.Config.Image
+          
+          console.log()
+          console.log "  #{'running'.green} #{name} (#{image})"
+          console.log()
+      
+    
+    fin = (err, code) ->
+      if err?
+        console.error err
+        process.exit 1
+      process.exit code
+    
     docke
       .image image
-      .run process.stdin, process.stdout, process.stderr, (err, code) ->
-        if err?
-          console.error err
-          process.exit 1
-        process.exit code
+      .run process.stdin, process.stdout, process.stderr, run, fin
   
   exec: ->
     if args.length isnt 1
@@ -173,11 +203,25 @@ commands =
     
     docke
       .container container
-      .exec process.stdin, process.stdout, process.stderr, (err, code) ->
+      .inspect (err, inspect) ->
         if err?
           console.error err
           process.exit 1
-        process.exit code
+        
+        name = inspect.Name[1..]
+        image = inspect.Config.Image
+        
+        console.log()
+        console.log "  #{'exec'.green} #{name} (#{image})"
+        console.log()
+        
+        docke
+          .container container
+          .exec process.stdin, process.stdout, process.stderr, (err, code) ->
+            if err?
+              console.error err
+              process.exit 1
+            process.exit code
   
   stop: ->
     if args.length is 0
@@ -187,6 +231,7 @@ commands =
     
     tasks = []
     
+    console.log()
     for arg in args
       do (arg) ->
         tasks.push (cb) ->
@@ -195,25 +240,26 @@ commands =
             .stop (err) ->
               if err?
                 if err.statusCode is 404
-                  console.error "#{arg.red} is an unknown container"
+                  console.error "  #{arg.red} is an unknown container"
                   return cb()
                 
                 if err.statusCode is 304
-                  console.error "#{arg.red} has already been stopped"
+                  console.error "  #{arg.red} has already been stopped"
                   return cb()
                 
                 if err.statusCode is 500
-                  console.error "could not stop #{arg.red}"
+                  console.error "  could not stop #{arg.red}"
                   return cb()
                 
                 console.error err
                 console.error JSON.stringify err
                 process.exit 1
               
-              console.log "#{'stopped'.green} #{arg}"
+              console.log "  #{'stopped'.green} #{arg}"
               cb()
     
     series tasks, ->
+      console.log()
   
   rm: ->
     if args.length is 0
@@ -223,6 +269,7 @@ commands =
     
     tasks = []
     
+    console.log()
     for arg in args
       do (arg) ->
         tasks.push (cb) ->
@@ -231,21 +278,22 @@ commands =
             .rm (err) ->
               if err?
                 if err.statusCode is 404
-                  console.error "#{arg.red} is an unknown container"
+                  console.error "  #{arg.red} is an unknown container"
                   return cb()
                 
                 if err.statusCode is 500
-                  console.error "could not delete #{arg.red}"
+                  console.error "  could not delete #{arg.red}"
                   return cb()
                 
                 console.error err
                 console.error JSON.stringify err
                 process.exit 1
               
-              console.log "#{'deleted'.green} #{arg}"
+              console.log "  #{'deleted'.green} #{arg}"
               cb()
     
     series tasks, ->
+      console.log()
   
   kill: ->
     if args.length is 0
@@ -255,6 +303,7 @@ commands =
     
     tasks = []
     
+    console.log()
     for arg in args
       do (arg) ->
         tasks.push (cb) ->
@@ -263,21 +312,22 @@ commands =
             .kill (err) ->
               if err?
                 if err.statusCode is 404
-                  console.error "#{arg.red} is an unknown container"
+                  console.error "  #{arg.red} is an unknown container"
                   return cb()
                 
                 if err.statusCode is 500
-                  console.error "could not send SIGTERM to #{arg.red}"
+                  console.error "  could not send SIGTERM to #{arg.red}"
                   return cb()
                 
                 console.error err
                 console.error JSON.stringify err
                 process.exit 1
               
-              console.log "#{'killed'.green} #{arg}"
+              console.log "  #{'killed'.green} #{arg}"
               cb()
     
     series tasks, ->
+      console.log()
 
 command = args[0]
 args.shift()

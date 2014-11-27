@@ -141,7 +141,7 @@ module.exports = class Docke
                 callback null, 0
   
   image: (id) =>
-    run: (stdin, stdout, stderr, callback)  =>
+    run: (stdin, stdout, stderr, run, fin)  =>
       params =
         AttachStdin: yes
         AttachStdout: yes
@@ -153,11 +153,14 @@ module.exports = class Docke
         Image: id
       
       @createContainer params, (err, container) =>
-        return callback err if err?
+        return run err if err?
+        id = container.Id
         container = @container container.Id
         
         container.attach (err, stream) =>
-          return callback err if err?
+          return run err if err?
+          
+          run null, id
           
           stream.pipe stdout
           wasRaw = process.isRaw
@@ -167,7 +170,7 @@ module.exports = class Docke
           stdin.pipe stream
           
           container.start (err) =>
-            return callback err if err?
+            return fin err if err?
             
             kill = (signal) =>
               stream.unpipe stdout
@@ -185,8 +188,8 @@ module.exports = class Docke
               process.exit 1
             
             container.wait (err, result) =>
-              return callback err if err?
+              return fin err if err?
               container.rm (err) ->
-                return callback err if err?
-                callback null, result.StatusCode
+                return fin err if err?
+                fin null, result.StatusCode
       
