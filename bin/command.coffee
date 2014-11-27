@@ -5,19 +5,24 @@ Docke = require '../src/docke'
 
 usage = """
 
-Usage: #{'docke'.cyan} command
+👾
 
-Commands:
+  Usage: #{'docke'.cyan} command parameters
+
+  Commands:
   
-  ping      Test the connection to docker
-  ps        List the running dockers and their ip addresses
-  inspect   Show details about containers
-  logs      Attach to logs of containers
-  run       Start a shell inside a new container
-  exec      Start a shell inside an existing container
-  kill      Send SIGTERM to running containers
-  stop      Stop containers
-  rm        Delete containers
+    ps        List all running containers
+    logs      Attach to container logs
+    run       Start a shell inside a new container
+    exec      Start a shell inside an existing container
+  
+  Docker management:
+  
+    ping      Test the docker connection
+    inspect   Show details about containers
+    kill      Send SIGTERM to running containers
+    stop      Stop containers
+    rm        Delete containers
 
 """
 
@@ -334,7 +339,8 @@ command = args[0]
 args.shift()
 
 if !commands[command]?
-  console.error "Unknown command #{command.cyan}"
+  console.error()
+  console.error "  #{command.red} is not a known docker command"
   console.error usage
   process.exit 1
 

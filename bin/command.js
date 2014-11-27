@@ -9,7 +9,7 @@ fs = require('fs');
 
 Docke = require('../src/docke');
 
-usage = "\nUsage: " + 'docke'.cyan + " command\n\nCommands:\n  \n  ping      Test the connection to docker\n  ps        List the running dockers and their ip addresses\n  inspect   Show details about containers\n  logs      Attach to logs of containers\n  run       Start a shell inside a new container\n  exec      Start a shell inside an existing container\n  kill      Send SIGTERM to running containers\n  stop      Stop containers\n  rm        Delete containers\n";
+usage = "\n👾\n\n  Usage: " + 'docke'.cyan + " command parameters\n\n  Commands:\n  \n    ps        List all running containers\n    logs      Attach to container logs\n    run       Start a shell inside a new container\n    exec      Start a shell inside an existing container\n  \n  Docker management:\n  \n    ping      Test the docker connection\n    inspect   Show details about containers\n    kill      Send SIGTERM to running containers\n    stop      Stop containers\n    rm        Delete containers\n";
 
 series = function(tasks, callback) {
   var next, result;
@@ -382,7 +382,8 @@ command = args[0];
 args.shift();
 
 if (commands[command] == null) {
-  console.error("Unknown command " + command.cyan);
+  console.error();
+  console.error("  " + command.red + " is not a known docker command");
   console.error(usage);
   process.exit(1);
 }
