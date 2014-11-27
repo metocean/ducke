@@ -4,7 +4,6 @@ fs = require 'fs'
 Docke = require '../src/docke'
 
 usage = """
-
 👾
 
   Usage: #{'docke'.cyan} command parameters
@@ -18,13 +17,18 @@ usage = """
   
   Docker management:
   
-    ping      Test the docker connection
     inspect   Show details about containers
     kill      Send SIGTERM to running containers
     stop      Stop containers
     rm        Delete containers
 
 """
+usage_error = (message) =>
+  console.error()
+  console.error "  #{message}".magenta
+  console.error()
+  console.error usage
+  process.exit 1
 
 series = (tasks, callback) ->
   tasks = tasks.slice 0
@@ -65,38 +69,13 @@ buildOptions = (args) ->
   result
 
 args = process.argv[2..]
-if args.length is 0
-  console.error usage
-  process.exit 1
-
 options = buildOptions args
 docke = new Docke options
 
 commands =
-  ping: ->
-    if args.length isnt 0
-      console.error "docke ping requires no arguments"
-      console.error usage
-      process.exit 1
-    
-    docke.ping (err, isUp) ->
-      if err?
-        console.error err
-        process.exit 1
-      if isUp
-        console.log()
-        console.log '  docker is up'.green
-        console.log()
-      else
-        console.error()
-        console.error '  docker is down'.red
-        console.error()
-  
   ps: ->
     if args.length isnt 0
-      console.error "docke ps requires no arguments"
-      console.error usage
-      process.exit 1
+      usage_error 'docke ps requires no arguments'
       
     docke.ps (err, results) ->
       if err?
@@ -125,9 +104,7 @@ commands =
   
   inspect: ->
     if args.length is 0
-      console.error "docke inspect requires container names"
-      console.error usage
-      process.exit 1
+      usage_error 'docke inspect requires container names'
     
     tasks = []
     results = []
@@ -148,9 +125,7 @@ commands =
   
   logs: ->
     if args.length is 0
-      console.error "docke logs requires container names"
-      console.error usage
-      process.exit 1
+      usage_error 'docke logs requires container names'
     
     for arg in args
       docke
@@ -163,9 +138,7 @@ commands =
   
   run: ->
     if args.length isnt 1
-      console.error "docke run requires an image name"
-      console.error usage
-      process.exit 1
+      usage_error 'docke run requires an image name'
     
     image = args[0]
     
@@ -201,9 +174,7 @@ commands =
   
   exec: ->
     if args.length isnt 1
-      console.error "docke exec requires a container name"
-      console.error usage
-      process.exit 1
+      usage_error 'docke exec requires a container name'
     
     container = args[0]
     
@@ -231,9 +202,7 @@ commands =
   
   stop: ->
     if args.length is 0
-      console.error "docke stop requires container names"
-      console.error usage
-      process.exit 1
+      usage_error 'docke stop requires container names'
     
     tasks = []
     
@@ -269,9 +238,7 @@ commands =
   
   rm: ->
     if args.length is 0
-      console.error "docke rm requires container names"
-      console.error usage
-      process.exit 1
+      usage_error 'docke rm requires container names'
     
     tasks = []
     
@@ -303,9 +270,7 @@ commands =
   
   kill: ->
     if args.length is 0
-      console.error "docke kill requires container names"
-      console.error usage
-      process.exit 1
+      usage_error 'docke kill requires container names'
     
     tasks = []
     
@@ -335,13 +300,40 @@ commands =
     series tasks, ->
       console.log()
 
-command = args[0]
-args.shift()
-
-if !commands[command]?
-  console.error()
-  console.error "  #{command.red} is not a known docker command"
+if args.length is 0
   console.error usage
-  process.exit 1
+  
+  docke.ping (err, isUp) ->
+    if err? or !isUp
+      console.error()
+      console.error '  docker is down'.red
+      console.error()
+      process.exit 1
+    else
+      console.error()
+      console.error '  docker is up with'.green
+      docke.ps (err, results) ->
+        if err? or results.length is 0
+          console.error()
+          console.error '  There are no docker containers on this system'.magenta
+          console.error()
+        else
+          ess = (num) -> if num is 1 then '' else 's'
+          running = results
+            .filter (d) -> d.inspect.State.Running
+            .length
+          stopped = running - results.length
+          console.error()
+          console.error "    #{running.toString().green} running container#{ess running}"
+          console.error "    #{stopped.toString().red} stopped container#{ess stopped}"
+          console.error()
+        process.exit 1
 
-commands[command]()
+else
+  command = args[0]
+  args.shift()
+
+  if !commands[command]?
+    usage_error "#{command} is not a known docker command"
+
+  commands[command]()
