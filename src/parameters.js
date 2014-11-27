@@ -11,7 +11,7 @@ module.exports = function(args) {
     host: url_parse(process.env.DOCKER_HOST || 'unix:///var/run/docker.sock'),
     port: process.env.DOCKER_PORT
   };
-  if (process.env.DOCKER_TLS_VERIFY !== '' || false && (process.env.DOCKER_CERT_PATH != null)) {
+  if (process.env.DOCKER_TLS_VERIFY !== '' && (process.env.DOCKER_CERT_PATH != null)) {
     path = process.env.DOCKER_CERT_PATH;
     result.ca = fs.readFileSync("" + path + "/ca.pem");
     result.cert = fs.readFileSync("" + path + "/cert.pem");
