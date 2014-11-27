@@ -102,6 +102,7 @@ commands =
         console.error()
         console.error '  There are no docker containers on this system'
         console.error()
+        return
       
       console.log()
       for result in results

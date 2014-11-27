@@ -129,6 +129,7 @@ commands = {
         console.error();
         console.error('  There are no docker containers on this system');
         console.error();
+        return;
       }
       console.log();
       for (_i = 0, _len = results.length; _i < _len; _i++) {
