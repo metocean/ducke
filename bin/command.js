@@ -11,7 +11,7 @@ minimist = require('minimist');
 
 Docke = require('../src/docke');
 
-usage = "\nUsage: " + 'docke'.cyan + " command\n\nCommands:\n  \n  ping      Test the connection to docker\n  ps        List the running dockers and their ip addresses\n  inspect   Show details about a container\n  logs      Attach to the logs of a container\n  run       Start a shell inside a new container\n  tap       Start a shell inside an existing container\n";
+usage = "\nUsage: " + 'docke'.cyan + " command\n\nCommands:\n  \n  ping      Test the connection to docker\n  ps        List the running dockers and their ip addresses\n  inspect   Show details about a container\n  logs      Attach to the logs of a container\n  run       Start a shell inside a new container\n  exec      Start a shell inside an existing container\n  kill      Delete a container\n";
 
 buildOptions = function(args) {
   var path, result;
@@ -64,19 +64,24 @@ commands = {
   },
   ps: function() {
     return docke.ps(function(err, results) {
-      var ip, result, _i, _len, _results;
+      var image, name, result, status, _i, _len, _results;
       if (err != null) {
         console.error(err);
         process.exit(1);
       }
+      if (results.length === 0) {
+        console.log("No docker containers");
+      }
       _results = [];
       for (_i = 0, _len = results.length; _i < _len; _i++) {
         result = results[_i];
-        ip = result.inspect.NetworkSettings.IPAddress.toString();
-        while (ip.length < 16) {
-          ip += ' ';
+        status = result.inspect.State.Running ? result.inspect.NetworkSettings.IPAddress.toString().blue : 'stopped'.red;
+        while (status.length < 26) {
+          status += ' ';
         }
-        _results.push(console.log("" + ip.blue + " " + result.container.Names[0].slice(1)));
+        name = result.container.Names[0].slice(1);
+        image = result.inspect.Config.Image;
+        _results.push(console.log("" + status + " " + name + " (" + image + ")"));
       }
       return _results;
     });
@@ -89,7 +94,7 @@ commands = {
       process.exit(1);
     }
     container = args._[1];
-    return docke.inspect(container, function(err, inspect) {
+    return docke.container(container).inspect(function(err, inspect) {
       if (err != null) {
         console.error(err);
         process.exit(1);
@@ -106,11 +111,11 @@ commands = {
     }
     container = args._[1];
     resize = function() {
-      return docke.resize(container, process.stdout.rows, process.stdout.columns, function() {});
+      return docke.container(container).resize(process.stdout.rows, process.stdout.columns, function() {});
     };
     process.stdout.on('resize', resize);
     resize();
-    return docke.logs(container, function(err, stream) {
+    return docke.container(container).logs(function(err, stream) {
       if (err != null) {
         console.error(err);
         process.exit(1);
@@ -126,7 +131,7 @@ commands = {
       process.exit(1);
     }
     image = args._[1];
-    return docke.run(image, process.stdin, process.stdout, process.stderr, function(err, code) {
+    return docke.image(image).run(process.stdin, process.stdout, process.stderr, function(err, code) {
       if (err != null) {
         console.error(err);
         process.exit(1);
@@ -134,20 +139,36 @@ commands = {
       return process.exit(code);
     });
   },
-  tap: function() {
+  exec: function() {
     var container;
     if (args._.length !== 2) {
-      console.error("docke tap requires container name");
+      console.error("docke exec requires container name");
       console.error(usage);
       process.exit(1);
     }
     container = args._[1];
-    return docke.tap(container, function(err, code) {
+    return docke.container(container).exec(process.stdin, process.stdout, process.stderr, function(err, code) {
       if (err != null) {
         console.error(err);
         process.exit(1);
       }
       return process.exit(code);
+    });
+  },
+  kill: function() {
+    var container;
+    if (args._.length !== 2) {
+      console.error("docke kill requires container name");
+      console.error(usage);
+      process.exit(1);
+    }
+    container = args._[1];
+    return docke.container(container).kill(function(err) {
+      if (err != null) {
+        console.error(err);
+        process.exit(1);
+      }
+      return process.exit(0);
     });
   }
 };

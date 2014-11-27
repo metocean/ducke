@@ -15,7 +15,8 @@ Commands:
   inspect   Show details about a container
   logs      Attach to the logs of a container
   run       Start a shell inside a new container
-  tap       Start a shell inside an existing container
+  exec      Start a shell inside an existing container
+  kill      Delete a container
 
 """
 
@@ -61,10 +62,21 @@ commands =
       if err?
         console.error err
         process.exit 1
+      
+      if results.length is 0
+        console.log "No docker containers"
+      
       for result in results
-        ip = result.inspect.NetworkSettings.IPAddress.toString()
-        ip += ' ' while ip.length < 16
-        console.log "#{ip.blue} #{result.container.Names[0][1..]}"
+        status = if result.inspect.State.Running
+          result.inspect.NetworkSettings.IPAddress.toString().blue
+        else
+          'stopped'.red
+        status += ' ' while status.length < 26
+        
+        name = result.container.Names[0][1..]
+        image = result.inspect.Config.Image
+        
+        console.log "#{status} #{name} (#{image})"
   
   inspect: ->
     if args._.length isnt 2
@@ -74,11 +86,13 @@ commands =
     
     container = args._[1]
     
-    docke.inspect container, (err, inspect) ->
-      if err?
-        console.error err
-        process.exit 1
-      console.log inspect
+    docke
+      .container container
+      .inspect (err, inspect) ->
+        if err?
+          console.error err
+          process.exit 1
+        console.log inspect
   
   logs: ->
     if args._.length isnt 2
@@ -89,15 +103,19 @@ commands =
     container = args._[1]
     
     resize = ->
-      docke.resize container, process.stdout.rows, process.stdout.columns, ->
+      docke
+        .container container
+        .resize process.stdout.rows, process.stdout.columns, ->
     process.stdout.on 'resize', resize
     resize()
     
-    docke.logs container, (err, stream) ->
-      if err?
-        console.error err
-        process.exit 1
-      stream.pipe process.stdout
+    docke
+      .container container
+      .logs (err, stream) ->
+        if err?
+          console.error err
+          process.exit 1
+        stream.pipe process.stdout
   
   run: ->
     if args._.length isnt 2
@@ -107,25 +125,45 @@ commands =
     
     image = args._[1]
     
-    docke.run image, process.stdin, process.stdout, process.stderr, (err, code) ->
-      if err?
-        console.error err
-        process.exit 1
-      process.exit code
+    docke
+      .image image
+      .run process.stdin, process.stdout, process.stderr, (err, code) ->
+        if err?
+          console.error err
+          process.exit 1
+        process.exit code
   
-  tap: ->
+  exec: ->
     if args._.length isnt 2
-      console.error "docke tap requires container name"
+      console.error "docke exec requires container name"
       console.error usage
       process.exit 1
     
     container = args._[1]
     
-    docke.tap container, (err, code) ->
-      if err?
-        console.error err
-        process.exit 1
-      process.exit code
+    docke
+      .container container
+      .exec process.stdin, process.stdout, process.stderr, (err, code) ->
+        if err?
+          console.error err
+          process.exit 1
+        process.exit code
+  
+  kill: ->
+    if args._.length isnt 2
+      console.error "docke kill requires container name"
+      console.error usage
+      process.exit 1
+    
+    container = args._[1]
+    
+    docke
+      .container container
+      .kill (err) ->
+        if err?
+          console.error err
+          process.exit 1
+        process.exit 0
 
 command = args._[0]
 if !commands[command]?

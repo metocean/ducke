@@ -34,17 +34,9 @@ parallel = function(tasks, callback) {
 
 module.exports = Docke = (function() {
   function Docke(options) {
-    this.run = __bind(this.run, this);
+    this.image = __bind(this.image, this);
+    this.container = __bind(this.container, this);
     this.createContainer = __bind(this.createContainer, this);
-    this.attachContainer = __bind(this.attachContainer, this);
-    this.deleteContainer = __bind(this.deleteContainer, this);
-    this.waitContainer = __bind(this.waitContainer, this);
-    this.startContainer = __bind(this.startContainer, this);
-    this.startExec = __bind(this.startExec, this);
-    this.exec = __bind(this.exec, this);
-    this.resize = __bind(this.resize, this);
-    this.logs = __bind(this.logs, this);
-    this.inspect = __bind(this.inspect, this);
     this.ps = __bind(this.ps, this);
     this.ping = __bind(this.ping, this);
     this._modem = new Modem(options);
@@ -60,7 +52,7 @@ module.exports = Docke = (function() {
   };
 
   Docke.prototype.ps = function(callback) {
-    return this._modem.get('/containers/json').result((function(_this) {
+    return this._modem.get('/containers/json?all=1').result((function(_this) {
       return function(err, containers) {
         var container, errors, results, tasks, _fn, _i, _len;
         if (err != null) {
@@ -109,118 +101,196 @@ module.exports = Docke = (function() {
     })(this));
   };
 
-  Docke.prototype.inspect = function(id, callback) {
-    return this._modem.get("/containers/" + id + "/json").result(callback);
-  };
-
-  Docke.prototype.logs = function(id, callback) {
-    return this._modem.get("/containers/" + id + "/logs?stderr=1&stdout=1&follow=1&tail=10").stream(callback);
-  };
-
-  Docke.prototype.resize = function(id, rows, columns, callback) {
-    return this._modem.get("/containers/" + id + "/resize?h=" + rows + "&w=" + columns).result((function(_this) {
-      return function(err, result) {
-        if (err != null) {
-          return callback(err);
-        }
-        return callback(null, result === 'OK');
-      };
-    })(this));
-  };
-
-  Docke.prototype.exec = function(id, cmd, callback) {
-    var params;
-    params = {
-      AttachStdin: true,
-      AttachStdout: true,
-      AttachStderr: true,
-      Tty: true,
-      Cmd: cmd.split(' '),
-      Container: id
-    };
-    return this._modem.post("/containers/" + id + "/exec", params).result(callback);
-  };
-
-  Docke.prototype.startExec = function(id, callback) {
-    var params;
-    params = {
-      Detach: false,
-      Tty: true
-    };
-    return this._modem.post("/exec/" + id + "/start", params).connect(callback);
-  };
-
-  Docke.prototype.startContainer = function(id, callback) {
-    return this._modem.post("/containers/" + id + "/start", {}).result(callback);
-  };
-
-  Docke.prototype.waitContainer = function(id, callback) {
-    return this._modem.post("/containers/" + id + "/wait", {}).result(callback);
-  };
-
-  Docke.prototype.deleteContainer = function(id, callback) {
-    return this._modem["delete"]("/containers/" + id).result(callback);
-  };
-
-  Docke.prototype.attachContainer = function(id, callback) {
-    return this._modem.post("/containers/" + id + "/attach?stream=true&stdin=true&stdout=true&stderr=true", {}).connect(callback);
-  };
-
   Docke.prototype.createContainer = function(params, callback) {
     return this._modem.post('/containers/create', params).result(callback);
   };
 
-  Docke.prototype.run = function(image, stdin, stdout, stderr, callback) {
-    var params;
-    params = {
-      AttachStdin: true,
-      AttachStdout: true,
-      AttachStderr: true,
-      Tty: true,
-      OpenStdin: true,
-      StdinOnce: false,
-      Cmd: ['bash'],
-      Image: image
-    };
-    return this.createContainer(params, (function(_this) {
-      return function(err, container) {
-        if (err != null) {
-          return callback(err);
-        }
-        return _this.attachContainer(container.Id, function(err, stream) {
-          var wasRaw;
-          if (err != null) {
-            return callback(err);
-          }
-          stream.pipe(stdout);
-          wasRaw = process.isRaw;
-          stdin.resume();
-          stdin.setEncoding('utf8');
-          stdin.setRawMode(true);
-          stdin.pipe(stream);
-          return _this.startContainer(container.Id, function(err) {
+  Docke.prototype.container = function(id) {
+    return {
+      inspect: (function(_this) {
+        return function(callback) {
+          return _this._modem.get("/containers/" + id + "/json").result(callback);
+        };
+      })(this),
+      logs: (function(_this) {
+        return function(callback) {
+          return _this._modem.get("/containers/" + id + "/logs?stderr=1&stdout=1&follow=1&tail=10").stream(callback);
+        };
+      })(this),
+      resize: (function(_this) {
+        return function(rows, columns, callback) {
+          return _this._modem.get("/containers/" + id + "/resize?h=" + rows + "&w=" + columns).result(function(err, result) {
             if (err != null) {
               return callback(err);
             }
-            return _this.waitContainer(container.Id, function(err, result) {
+            return callback(null, result === 'OK');
+          });
+        };
+      })(this),
+      start: (function(_this) {
+        return function(callback) {
+          return _this._modem.post("/containers/" + id + "/start", {}).result(callback);
+        };
+      })(this),
+      stop: (function(_this) {
+        return function(callback) {
+          return _this._modem.post("/containers/" + id + "/stop?t=5", {}).result(callback);
+        };
+      })(this),
+      wait: (function(_this) {
+        return function(callback) {
+          return _this._modem.post("/containers/" + id + "/wait", {}).result(callback);
+        };
+      })(this),
+      "delete": (function(_this) {
+        return function(callback) {
+          return _this._modem["delete"]("/containers/" + id).result(callback);
+        };
+      })(this),
+      attach: (function(_this) {
+        return function(callback) {
+          return _this._modem.post("/containers/" + id + "/attach?stream=true&stdin=true&stdout=true&stderr=true", {}).connect(callback);
+        };
+      })(this),
+      kill: (function(_this) {
+        return function(callback) {
+          return _this._modem.post("/containers/" + id + "/kill?signal=SIGTERM", {}).result(callback);
+        };
+      })(this),
+      exec: (function(_this) {
+        return function(stdin, stdout, stderr, callback) {
+          var params;
+          params = {
+            AttachStdin: true,
+            AttachStdout: true,
+            AttachStderr: true,
+            Tty: true,
+            Cmd: ['bash']
+          };
+          return _this._modem.post("/containers/" + id + "/exec", params).result(function(err, exec) {
+            if (err != null) {
+              return callback(err);
+            }
+            return _this._modem.post("/exec/" + exec.Id + "/start", {
+              Detach: false,
+              Tty: true
+            }).connect(function(err, stream) {
+              var wasRaw;
               if (err != null) {
                 return callback(err);
               }
-              stdin.removeAllListeners();
-              stdin.setRawMode(wasRaw);
+              stream.pipe(stdout);
+              wasRaw = process.isRaw;
               stdin.resume();
-              stream.end();
-              return _this.deleteContainer(container.Id, function(err) {
-                if (err != null) {
-                  return callback(err);
-                }
-                return callback(null, result.StatusCode);
+              stdin.setEncoding('utf8');
+              stdin.setRawMode(true);
+              stdin.pipe(stream);
+              return stream.on('end', function() {
+                stdin.removeAllListeners();
+                stdin.setRawMode(wasRaw);
+                stdin.resume();
+                return callback(null, 0);
               });
             });
           });
-        });
-      };
-    })(this));
+        };
+      })(this)
+    };
+  };
+
+  Docke.prototype.image = function(id) {
+    return {
+      run: (function(_this) {
+        return function(stdin, stdout, stderr, callback) {
+          var params;
+          params = {
+            AttachStdin: true,
+            AttachStdout: true,
+            AttachStderr: true,
+            Tty: true,
+            OpenStdin: true,
+            StdinOnce: false,
+            Cmd: ['bash'],
+            Image: id
+          };
+          return _this.createContainer(params, function(err, container) {
+            if (err != null) {
+              return callback(err);
+            }
+            container = _this.container(container.Id);
+            return container.attach(function(err, stream) {
+              var wasRaw;
+              if (err != null) {
+                return callback(err);
+              }
+              stream.pipe(stdout);
+              wasRaw = process.isRaw;
+              stdin.resume();
+              stdin.setEncoding('utf8');
+              stdin.setRawMode(true);
+              stdin.pipe(stream);
+              return container.start(function(err) {
+                var kill, log;
+                if (err != null) {
+                  return callback(err);
+                }
+                log = function(message) {
+                  return fs.appendFileSync('/Users/tcoats/Desktop/log.txt', "" + (Date.now().toString()) + " " + message + "\n");
+                };
+                kill = function(signal) {
+                  var fs;
+                  fs = require('fs');
+                  log(signal);
+                  return container.kill(function(err) {
+                    log('killed');
+                    if (err != null) {
+                      return callback(err);
+                    }
+                    return container.stop(function(err) {
+                      log('stopped');
+                      if (err != null) {
+                        return callback(err);
+                      }
+                      return container["delete"](function(err) {
+                        log('deleted');
+                        return callback(err, 0);
+                      });
+                    });
+                  });
+                };
+                process.on('SIGTERM', function() {
+                  return kill('SIGTERM');
+                });
+                process.on('SIGINT', function() {
+                  return kill('SIGINT');
+                });
+                process.on('SIGHUP', function() {
+                  return kill('SIGHUP');
+                });
+                process.on('exit', function() {
+                  return log('exit');
+                });
+                return container.wait(function(err, result) {
+                  if (err != null) {
+                    return callback(err);
+                  }
+                  stdin.removeAllListeners();
+                  stdin.setRawMode(wasRaw);
+                  stdin.resume();
+                  stream.end();
+                  return container["delete"](function(err) {
+                    if (err != null) {
+                      return callback(err);
+                    }
+                    return callback(null, result.StatusCode);
+                  });
+                });
+              });
+            });
+          });
+        };
+      })(this)
+    };
   };
 
   return Docke;

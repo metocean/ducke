@@ -161,7 +161,8 @@ module.exports = class Modem
       req = @_dial options, (err, res) =>
         return callback err if err?
         callback null, new HttpDuplex req, res
-      req.end()
+      return req.end() if !options.body?
+      @_write req, options.body
     
     result: (callback) =>
       req = @_dial options, (err, res) =>

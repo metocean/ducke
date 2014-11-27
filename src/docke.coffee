@@ -25,7 +25,7 @@ module.exports = class Docke
   
   ps: (callback)  =>
     @_modem
-      .get '/containers/json'
+      .get '/containers/json?all=1'
       .result (err, containers) =>
         return callback err if err?
         results = []
@@ -55,101 +55,151 @@ module.exports = class Docke
           
           return callback errors, results if errors.length > 0
           callback null, results
-
-  inspect: (id, callback) =>
-    @_modem
-      .get "/containers/#{id}/json"
-      .result callback
-  
-  logs: (id, callback) =>
-    @_modem
-      .get "/containers/#{id}/logs?stderr=1&stdout=1&follow=1&tail=10"
-      .stream callback
-  
-  resize: (id, rows, columns, callback) =>
-    @_modem
-      .get "/containers/#{id}/resize?h=#{rows}&w=#{columns}"
-      .result (err, result) =>
-        return callback err if err?
-        callback null, result is 'OK'
-  
-  exec: (id, cmd, callback) =>
-    params =
-      AttachStdin: yes
-      AttachStdout: yes
-      AttachStderr: yes
-      Tty: yes
-      Cmd: cmd.split ' '
-      Container: id
-    @_modem
-      .post "/containers/#{id}/exec", params
-      .result callback
-  
-  startExec: (id, callback) =>
-    params =
-      Detach: no
-      Tty: yes
-    @_modem
-      .post "/exec/#{id}/start", params
-      .connect callback
-  
-  startContainer: (id, callback) =>
-    @_modem
-      .post "/containers/#{id}/start", {}
-      .result callback
-  
-  waitContainer: (id, callback) =>
-    @_modem
-      .post "/containers/#{id}/wait", {}
-      .result callback
-  
-  deleteContainer: (id, callback) =>
-    @_modem
-      .delete "/containers/#{id}"
-      .result callback
-  
-  attachContainer: (id, callback) =>
-    @_modem
-    .post "/containers/#{id}/attach?stream=true&stdin=true&stdout=true&stderr=true", {}
-    .connect callback
   
   createContainer: (params, callback) =>
     @_modem
       .post '/containers/create', params
       .result callback
   
-  run: (image, stdin, stdout, stderr, callback)  =>
-    params =
-      AttachStdin: yes
-      AttachStdout: yes
-      AttachStderr: yes
-      Tty: yes
-      OpenStdin: yes
-      StdinOnce: no
-      Cmd: ['bash']
-      Image: image
+  container: (id) =>
+    inspect: (callback) =>
+      @_modem
+        .get "/containers/#{id}/json"
+        .result callback
     
-    @createContainer params, (err, container) =>
-      return callback err if err?
-      @attachContainer container.Id, (err, stream) =>
-        return callback err if err?
-        stream.pipe stdout
-        
-        wasRaw = process.isRaw
-        stdin.resume()
-        stdin.setEncoding 'utf8'
-        stdin.setRawMode yes
-        stdin.pipe stream
-        
-        @startContainer container.Id, (err) =>
+    logs: (callback) =>
+      @_modem
+        .get "/containers/#{id}/logs?stderr=1&stdout=1&follow=1&tail=10"
+        .stream callback
+    
+    resize: (rows, columns, callback) =>
+      @_modem
+        .get "/containers/#{id}/resize?h=#{rows}&w=#{columns}"
+        .result (err, result) =>
           return callback err if err?
-          @waitContainer container.Id, (err, result) =>
-            return callback err if err?
-            stdin.removeAllListeners()
-            stdin.setRawMode wasRaw
-            stdin.resume()
-            stream.end()
-            @deleteContainer container.Id, (err) ->
+          callback null, result is 'OK'
+    
+    start: (callback) =>
+      @_modem
+        .post "/containers/#{id}/start", {}
+        .result callback
+    
+    stop: (callback) =>
+      @_modem
+        .post "/containers/#{id}/stop?t=5", {}
+        .result callback
+    
+    wait: (callback) =>
+      @_modem
+        .post "/containers/#{id}/wait", {}
+        .result callback
+    
+    delete: (callback) =>
+      @_modem
+        .delete "/containers/#{id}"
+        .result callback
+    
+    attach: (callback) =>
+      @_modem
+        .post "/containers/#{id}/attach?stream=true&stdin=true&stdout=true&stderr=true", {}
+        .connect callback
+    
+    kill: (callback) =>
+      @_modem
+        .post "/containers/#{id}/kill?signal=SIGTERM", {}
+        .result callback
+    
+    exec: (stdin, stdout, stderr, callback) =>
+      params =
+        AttachStdin: yes
+        AttachStdout: yes
+        AttachStderr: yes
+        Tty: yes
+        Cmd: ['bash']
+      
+      @_modem
+        .post "/containers/#{id}/exec", params
+        .result (err, exec) =>
+          return callback err if err?
+          
+          @_modem
+            .post "/exec/#{exec.Id}/start", { Detach: no, Tty: yes }
+            .connect  (err, stream) =>
               return callback err if err?
-              callback null, result.StatusCode
+              
+              stream.pipe stdout
+              wasRaw = process.isRaw
+              stdin.resume()
+              stdin.setEncoding 'utf8'
+              stdin.setRawMode yes
+              stdin.pipe stream
+              
+              stream.on 'end', ->
+                stdin.removeAllListeners()
+                stdin.setRawMode wasRaw
+                stdin.resume()
+                callback null, 0
+  
+  image: (id) =>
+    run: (stdin, stdout, stderr, callback)  =>
+      params =
+        AttachStdin: yes
+        AttachStdout: yes
+        AttachStderr: yes
+        Tty: yes
+        OpenStdin: yes
+        StdinOnce: no
+        Cmd: ['bash']
+        Image: id
+      
+      @createContainer params, (err, container) =>
+        return callback err if err?
+        container = @container container.Id
+        
+        container.attach (err, stream) =>
+          return callback err if err?
+          
+          stream.pipe stdout
+          wasRaw = process.isRaw
+          stdin.resume()
+          stdin.setEncoding 'utf8'
+          stdin.setRawMode yes
+          stdin.pipe stream
+          
+          container.start (err) =>
+            return callback err if err?
+            
+            log = (message) ->
+              fs.appendFileSync '/Users/tcoats/Desktop/log.txt',
+                "#{Date.now().toString()} #{message}\n"
+            
+            kill = (signal) =>
+              fs = require 'fs'
+              log signal
+              container.kill (err) =>
+                log 'killed'
+                return callback err if err?
+                container.stop (err) =>
+                  log 'stopped'
+                  return callback err if err?
+                  container.delete (err) =>
+                    log 'deleted'
+                    callback err, 0
+            
+            process.on 'SIGTERM', -> kill 'SIGTERM'
+            process.on 'SIGINT', -> kill 'SIGINT'
+            process.on 'SIGHUP', -> kill 'SIGHUP'
+            process.on 'exit', -> log 'exit'
+            
+            container.wait (err, result) =>
+              #process.removeListener 'SIGINT', teardown
+              return callback err if err?
+              
+              stdin.removeAllListeners()
+              stdin.setRawMode wasRaw
+              stdin.resume()
+              stream.end()
+              container.delete (err) ->
+                return callback err if err?
+                callback null, result.StatusCode
       

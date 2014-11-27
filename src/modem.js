@@ -273,7 +273,10 @@ module.exports = Modem = (function() {
             }
             return callback(null, new HttpDuplex(req, res));
           });
-          return req.end();
+          if (options.body == null) {
+            return req.end();
+          }
+          return _this._write(req, options.body);
         };
       })(this),
       result: (function(_this) {
