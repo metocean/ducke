@@ -198,7 +198,11 @@ module.exports = Modem = (function() {
         });
         if (res.statusCode < 200 || res.statusCode >= 300) {
           return _this._read(res, function(err, content) {
-            return callback(new Error("" + res.statusCode + " " + content), null);
+            var error;
+            error = new Error("" + res.statusCode + " " + content);
+            error.statusCode = res.statusCode;
+            error.content = content;
+            return callback(error, null);
           });
         }
         return callback(null, res);
@@ -220,10 +224,16 @@ module.exports = Modem = (function() {
     });
     return res.on('end', (function(_this) {
       return function() {
+        var e;
         if (content === '' || content === 'OK') {
           return callback(null, content);
         }
-        return callback(null, JSON.parse(content));
+        try {
+          return callback(null, JSON.parse(content));
+        } catch (_error) {
+          e = _error;
+          return callback(e);
+        }
       };
     })(this));
   };

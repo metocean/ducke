@@ -122,7 +122,10 @@ module.exports = class Modem
       
       if res.statusCode < 200 or res.statusCode >= 300
         return @_read res, (err, content) =>
-          callback new Error("#{res.statusCode} #{content}"), null
+          error = new Error "#{res.statusCode} #{content}"
+          error.statusCode = res.statusCode
+          error.content = content
+          callback error, null
       callback null, res
     
     req.on 'error', (err) =>
@@ -135,7 +138,10 @@ module.exports = class Modem
     res.on 'data', (data) -> content += data
     res.on 'end', =>
       return callback null, content if content in ['', 'OK']
-      callback null, JSON.parse content
+      try
+        callback null, JSON.parse content
+      catch e
+        callback e
   
   _write: (req, data) =>
     if typeof data is 'string' or Buffer.isBuffer data

@@ -1,7 +1,6 @@
 require 'colors'
 url_parse = require('url').parse
 fs = require 'fs'
-minimist = require 'minimist'
 Docke = require '../src/docke'
 
 usage = """
@@ -12,15 +11,36 @@ Commands:
   
   ping      Test the connection to docker
   ps        List the running dockers and their ip addresses
-  inspect   Show details about a container
-  logs      Attach to the logs of a container
+  inspect   Show details about containers
+  logs      Attach to logs of containers
   run       Start a shell inside a new container
   exec      Start a shell inside an existing container
-  kill      Send SIGTERM to a running container
-  stop      Stop a container
-  rm        Delete a container
+  kill      Send SIGTERM to running containers
+  stop      Stop containers
+  rm        Delete containers
 
 """
+
+series = (tasks, callback) ->
+  tasks = tasks.slice 0
+  next = (cb) ->
+    return cb() if tasks.length is 0
+    task = tasks.shift()
+    task -> next cb
+  result = (cb) -> next cb
+  result(callback) if callback?
+  result
+
+parallel = (tasks, callback) ->
+  count = tasks.length
+  result = (cb) ->
+    return cb() if count is 0
+    for task in tasks
+      task ->
+        count--
+        cb() if count is 0
+  result(callback) if callback?
+  result
 
 buildOptions = (args) ->
   result =
@@ -39,9 +59,8 @@ buildOptions = (args) ->
   
   result
 
-args = minimist process.argv[2..],
-  default: 'http-addr': '127.0.0.1:8500'
-if args._.length is 0
+args = process.argv[2..]
+if args.length is 0
   console.error usage
   process.exit 1
 
@@ -50,6 +69,11 @@ docke = new Docke options
 
 commands =
   ping: ->
+    if args.length isnt 0
+      console.error "docke ping requires no arguments"
+      console.error usage
+      process.exit 1
+    
     docke.ping (err, isUp) ->
       if err?
         console.error err
@@ -60,6 +84,11 @@ commands =
         console.error 'docker is down'.red
   
   ps: ->
+    if args.length isnt 0
+      console.error "docke ps requires no arguments"
+      console.error usage
+      process.exit 1
+      
     docke.ps (err, results) ->
       if err?
         console.error err
@@ -81,68 +110,66 @@ commands =
         console.log "#{status} #{name} (#{image})"
   
   inspect: ->
-    if args._.length isnt 2
-      console.error "docke inspect requires container name"
+    if args.length is 0
+      console.error "docke inspect requires container names"
       console.error usage
       process.exit 1
     
-    container = args._[1]
+    tasks = []
+    results = []
     
-    docke
-      .container container
-      .inspect (err, inspect) ->
-        if err?
-          console.error err
-          process.exit 1
-        console.log inspect
+    for arg in args
+      do (arg) ->
+        tasks.push (cb) ->
+          docke
+            .container arg
+            .inspect (err, inspect) ->
+              if err?
+                console.error err
+                process.exit 1
+              results.push inspect
+              cb()
+    
+    series tasks, -> console.log results
   
   logs: ->
-    if args._.length isnt 2
-      console.error "docke logs requires container name"
+    if args.length is 0
+      console.error "docke logs requires container names"
       console.error usage
       process.exit 1
     
-    container = args._[1]
-    
-    resize = ->
+    for arg in args
       docke
-        .container container
-        .resize process.stdout.rows, process.stdout.columns, ->
-    process.stdout.on 'resize', resize
-    resize()
-    
-    docke
-      .container container
-      .logs (err, stream) ->
-        if err?
-          console.error err
-          process.exit 1
-        stream.pipe process.stdout
+        .container arg
+        .logs (err, stream) ->
+          if err?
+            console.error err
+            process.exit 1
+          stream.pipe process.stdout
   
   run: ->
-    if args._.length isnt 2
-      console.error "docke run requires image name"
+    if args.length isnt 1
+      console.error "docke run requires an image name"
       console.error usage
       process.exit 1
     
-    image = args._[1]
+    image = args[0]
     
     docke
       .image image
       .run process.stdin, process.stdout, process.stderr, (err, code) ->
-        fs.appendFileSync '/Users/tcoats/Desktop/log.txt', "#{new Date().toString()} GOT HERE\n"
         if err?
           console.error err
           process.exit 1
         process.exit code
   
   exec: ->
-    if args._.length isnt 2
-      console.error "docke exec requires container name"
+    if args.length isnt 1
+      console.error "docke exec requires a container name"
       console.error usage
       process.exit 1
     
-    container = args._[1]
+    container = args[0]
     
     docke
       .container container
@@ -153,52 +180,108 @@ commands =
         process.exit code
   
   stop: ->
-    if args._.length isnt 2
-      console.error "docke stop requires container name"
+    if args.length is 0
+      console.error "docke stop requires container names"
       console.error usage
       process.exit 1
     
-    container = args._[1]
+    tasks = []
     
-    docke
-      .container container
-      .stop (err) ->
-        if err?
-          console.error err
-          process.exit 1
+    for arg in args
+      do (arg) ->
+        tasks.push (cb) ->
+          docke
+            .container arg
+            .stop (err) ->
+              if err?
+                if err.statusCode is 404
+                  console.error "#{arg.red} is an unknown container"
+                  return cb()
+                
+                if err.statusCode is 304
+                  console.error "#{arg.red} has already been stopped"
+                  return cb()
+                
+                if err.statusCode is 500
+                  console.error "could not stop #{arg.red}"
+                  return cb()
+                
+                console.error err
+                console.error JSON.stringify err
+                process.exit 1
+              
+              console.log "#{'stopped'.green} #{arg}"
+              cb()
+    
+    series tasks, ->
   
   rm: ->
-    if args._.length isnt 2
-      console.error "docke rm requires container name"
+    if args.length is 0
+      console.error "docke rm requires container names"
       console.error usage
       process.exit 1
     
-    container = args._[1]
+    tasks = []
     
-    docke
-      .container container
-      .rm (err) ->
-        if err?
-          console.error err
-          process.exit 1
+    for arg in args
+      do (arg) ->
+        tasks.push (cb) ->
+          docke
+            .container arg
+            .rm (err) ->
+              if err?
+                if err.statusCode is 404
+                  console.error "#{arg.red} is an unknown container"
+                  return cb()
+                
+                if err.statusCode is 500
+                  console.error "could not delete #{arg.red}"
+                  return cb()
+                
+                console.error err
+                console.error JSON.stringify err
+                process.exit 1
+              
+              console.log "#{'deleted'.green} #{arg}"
+              cb()
+    
+    series tasks, ->
   
   kill: ->
-    if args._.length isnt 2
-      console.error "docke kill requires container name"
+    if args.length is 0
+      console.error "docke kill requires container names"
       console.error usage
       process.exit 1
     
-    container = args._[1]
+    tasks = []
     
-    docke
-      .container container
-      .kill (err) ->
-        if err?
-          console.error err
-          process.exit 1
-        process.exit 0
+    for arg in args
+      do (arg) ->
+        tasks.push (cb) ->
+          docke
+            .container arg
+            .kill (err) ->
+              if err?
+                if err.statusCode is 404
+                  console.error "#{arg.red} is an unknown container"
+                  return cb()
+                
+                if err.statusCode is 500
+                  console.error "could not send SIGTERM to #{arg.red}"
+                  return cb()
+                
+                console.error err
+                console.error JSON.stringify err
+                process.exit 1
+              
+              console.log "#{'killed'.green} #{arg}"
+              cb()
+    
+    series tasks, ->
 
-command = args._[0]
+command = args[0]
+args.shift()
+
 if !commands[command]?
   console.error "Unknown command #{command.cyan}"
   console.error usage
