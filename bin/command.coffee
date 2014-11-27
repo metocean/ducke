@@ -100,7 +100,7 @@ commands =
       
       if results.length is 0
         console.error()
-        console.error '  There are no docker containers on this system'
+        console.error '  There are no docker containers on this system'.magenta
         console.error()
         return
       
