@@ -16,7 +16,9 @@ Commands:
   logs      Attach to the logs of a container
   run       Start a shell inside a new container
   exec      Start a shell inside an existing container
-  kill      Delete a container
+  kill      Send SIGTERM to a running container
+  stop      Stop a container
+  rm        Delete a container
 
 """
 
@@ -64,7 +66,7 @@ commands =
         process.exit 1
       
       if results.length is 0
-        console.log "No docker containers"
+        console.log "no docker containers"
       
       for result in results
         status = if result.inspect.State.Running
@@ -128,6 +130,7 @@ commands =
     docke
       .image image
       .run process.stdin, process.stdout, process.stderr, (err, code) ->
+        fs.appendFileSync '/Users/tcoats/Desktop/log.txt', "#{new Date().toString()} GOT HERE\n"
         if err?
           console.error err
           process.exit 1
@@ -148,6 +151,36 @@ commands =
           console.error err
           process.exit 1
         process.exit code
+  
+  stop: ->
+    if args._.length isnt 2
+      console.error "docke stop requires container name"
+      console.error usage
+      process.exit 1
+    
+    container = args._[1]
+    
+    docke
+      .container container
+      .stop (err) ->
+        if err?
+          console.error err
+          process.exit 1
+  
+  rm: ->
+    if args._.length isnt 2
+      console.error "docke rm requires container name"
+      console.error usage
+      process.exit 1
+    
+    container = args._[1]
+    
+    docke
+      .container container
+      .rm (err) ->
+        if err?
+          console.error err
+          process.exit 1
   
   kill: ->
     if args._.length isnt 2

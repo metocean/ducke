@@ -142,7 +142,7 @@ module.exports = Docke = (function() {
           return _this._modem.post("/containers/" + id + "/wait", {}).result(callback);
         };
       })(this),
-      "delete": (function(_this) {
+      rm: (function(_this) {
         return function(callback) {
           return _this._modem["delete"]("/containers/" + id).result(callback);
         };
@@ -230,33 +230,15 @@ module.exports = Docke = (function() {
               stdin.setRawMode(true);
               stdin.pipe(stream);
               return container.start(function(err) {
-                var kill, log;
+                var kill;
                 if (err != null) {
                   return callback(err);
                 }
-                log = function(message) {
-                  return fs.appendFileSync('/Users/tcoats/Desktop/log.txt', "" + (Date.now().toString()) + " " + message + "\n");
-                };
                 kill = function(signal) {
-                  var fs;
-                  fs = require('fs');
-                  log(signal);
-                  return container.kill(function(err) {
-                    log('killed');
-                    if (err != null) {
-                      return callback(err);
-                    }
-                    return container.stop(function(err) {
-                      log('stopped');
-                      if (err != null) {
-                        return callback(err);
-                      }
-                      return container["delete"](function(err) {
-                        log('deleted');
-                        return callback(err, 0);
-                      });
-                    });
-                  });
+                  stream.unpipe(stdout);
+                  stdin.unpipe(stream);
+                  stream.end();
+                  return container.kill(function() {});
                 };
                 process.on('SIGTERM', function() {
                   return kill('SIGTERM');
@@ -267,18 +249,15 @@ module.exports = Docke = (function() {
                 process.on('SIGHUP', function() {
                   return kill('SIGHUP');
                 });
-                process.on('exit', function() {
-                  return log('exit');
+                process.on('uncaughtException', function(err) {
+                  log(err.stack);
+                  return process.exit(1);
                 });
                 return container.wait(function(err, result) {
                   if (err != null) {
                     return callback(err);
                   }
-                  stdin.removeAllListeners();
-                  stdin.setRawMode(wasRaw);
-                  stdin.resume();
-                  stream.end();
-                  return container["delete"](function(err) {
+                  return container.rm(function(err) {
                     if (err != null) {
                       return callback(err);
                     }

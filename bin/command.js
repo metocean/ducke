@@ -11,7 +11,7 @@ minimist = require('minimist');
 
 Docke = require('../src/docke');
 
-usage = "\nUsage: " + 'docke'.cyan + " command\n\nCommands:\n  \n  ping      Test the connection to docker\n  ps        List the running dockers and their ip addresses\n  inspect   Show details about a container\n  logs      Attach to the logs of a container\n  run       Start a shell inside a new container\n  exec      Start a shell inside an existing container\n  kill      Delete a container\n";
+usage = "\nUsage: " + 'docke'.cyan + " command\n\nCommands:\n  \n  ping      Test the connection to docker\n  ps        List the running dockers and their ip addresses\n  inspect   Show details about a container\n  logs      Attach to the logs of a container\n  run       Start a shell inside a new container\n  exec      Start a shell inside an existing container\n  kill      Send SIGTERM to a running container\n  stop      Stop a container\n  rm        Delete a container\n";
 
 buildOptions = function(args) {
   var path, result;
@@ -70,7 +70,7 @@ commands = {
         process.exit(1);
       }
       if (results.length === 0) {
-        console.log("No docker containers");
+        console.log("no docker containers");
       }
       _results = [];
       for (_i = 0, _len = results.length; _i < _len; _i++) {
@@ -132,6 +132,7 @@ commands = {
     }
     image = args._[1];
     return docke.image(image).run(process.stdin, process.stdout, process.stderr, function(err, code) {
+      fs.appendFileSync('/Users/tcoats/Desktop/log.txt', "" + (new Date().toString()) + " GOT HERE\n");
       if (err != null) {
         console.error(err);
         process.exit(1);
@@ -153,6 +154,36 @@ commands = {
         process.exit(1);
       }
       return process.exit(code);
+    });
+  },
+  stop: function() {
+    var container;
+    if (args._.length !== 2) {
+      console.error("docke stop requires container name");
+      console.error(usage);
+      process.exit(1);
+    }
+    container = args._[1];
+    return docke.container(container).stop(function(err) {
+      if (err != null) {
+        console.error(err);
+        return process.exit(1);
+      }
+    });
+  },
+  rm: function() {
+    var container;
+    if (args._.length !== 2) {
+      console.error("docke rm requires container name");
+      console.error(usage);
+      process.exit(1);
+    }
+    container = args._[1];
+    return docke.container(container).rm(function(err) {
+      if (err != null) {
+        console.error(err);
+        return process.exit(1);
+      }
     });
   },
   kill: function() {

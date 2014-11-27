@@ -5,9 +5,6 @@ resolve_path = require('path').resolve
 url = require 'url'
 HttpDuplex = require './httpduplex'
 
-debug = require('debug') 'modem'
-util = require 'util'
-
 class UnixSocket
   constructor: (host, options) ->
     @_socketPath = host.path
@@ -113,9 +110,6 @@ module.exports = class Modem
     @_conn.apply params
     
     req = @_conn.request params
-    debug 'Sending: %s', util.inspect params,
-      showHidden: yes
-      depth: null
     
     if @timeout
       req.on 'socket', (socket) =>
@@ -123,23 +117,25 @@ module.exports = class Modem
         socket.on 'timeout', -> req.abort()
     
     req.on 'response', (res) =>
+      res.on 'error', (err) =>
+        callback err, null
+      
       if res.statusCode < 200 or res.statusCode >= 300
         return @_read res, (err, content) =>
           callback new Error("#{res.statusCode} #{content}"), null
       callback null, res
     
-    req.on 'error', (err) => callback err, null
+    req.on 'error', (err) =>
+      callback err, null
+    
     req
   
   _read: (res, callback) =>
     content = ''
     res.on 'data', (data) -> content += data
     res.on 'end', =>
-      debug 'Received: %s', content
-      try
-        callback null, JSON.parse content
-      catch e
-        callback null, content
+      return callback null, content if content in ['', 'OK']
+      callback null, JSON.parse content
   
   _write: (req, data) =>
     if typeof data is 'string' or Buffer.isBuffer data

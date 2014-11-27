@@ -94,7 +94,7 @@ module.exports = class Docke
         .post "/containers/#{id}/wait", {}
         .result callback
     
-    delete: (callback) =>
+    rm: (callback) =>
       @_modem
         .delete "/containers/#{id}"
         .result callback
@@ -169,37 +169,24 @@ module.exports = class Docke
           container.start (err) =>
             return callback err if err?
             
-            log = (message) ->
-              fs.appendFileSync '/Users/tcoats/Desktop/log.txt',
-                "#{Date.now().toString()} #{message}\n"
-            
             kill = (signal) =>
-              fs = require 'fs'
-              log signal
-              container.kill (err) =>
-                log 'killed'
-                return callback err if err?
-                container.stop (err) =>
-                  log 'stopped'
-                  return callback err if err?
-                  container.delete (err) =>
-                    log 'deleted'
-                    callback err, 0
+              stream.unpipe stdout
+              stdin.unpipe stream
+              stream.end()
+              # This will kick off the wait (eventually)
+              container.kill ->
             
             process.on 'SIGTERM', -> kill 'SIGTERM'
             process.on 'SIGINT', -> kill 'SIGINT'
             process.on 'SIGHUP', -> kill 'SIGHUP'
-            process.on 'exit', -> log 'exit'
+            
+            process.on 'uncaughtException', (err) ->
+              log err.stack
+              process.exit 1
             
             container.wait (err, result) =>
-              #process.removeListener 'SIGINT', teardown
               return callback err if err?
-              
-              stdin.removeAllListeners()
-              stdin.setRawMode wasRaw
-              stdin.resume()
-              stream.end()
-              container.delete (err) ->
+              container.rm (err) ->
                 return callback err if err?
                 callback null, result.StatusCode
       
