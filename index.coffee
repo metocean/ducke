@@ -1,5 +1,5 @@
 module.exports =
-  API: require './src/docke'
+  API: require './src/ducke'
   Modem: require './src/modem'
   DemuxStream: require './src/demuxstream'
   HttpDuplex: require './src/httpduplex'

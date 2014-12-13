@@ -11,15 +11,15 @@ series = (tasks, callback) ->
   result
 
 module.exports =
-  status: (docke) ->
-    docke.ping (err, isUp) ->
+  status: (ducke) ->
+    ducke.ping (err, isUp) ->
       if err? or !isUp
         console.error()
         console.error '  docker is down'.red
         console.error()
         process.exit 1
       else
-        docke.ps (err, results) ->
+        ducke.ps (err, results) ->
           if err? or results.length is 0
             console.error()
             console.error '  There are no docker containers on this system'.magenta
@@ -35,8 +35,8 @@ module.exports =
             console.error()
           process.exit 1
   
-  ps: (docke) ->
-    docke.ps (err, results) ->
+  ps: (ducke) ->
+    ducke.ps (err, results) ->
       if err?
         console.error err
         process.exit 1
@@ -61,14 +61,14 @@ module.exports =
         console.log "  #{status} #{name} (#{image})"
       console.log()
   
-  inspect: (docke, containers) ->
+  inspect: (ducke, containers) ->
     tasks = []
     results = []
     
     for id in containers
       do (id) ->
         tasks.push (cb) ->
-          docke
+          ducke
             .container id
             .inspect (err, inspect) ->
               if err?
@@ -79,9 +79,9 @@ module.exports =
     
     series tasks, -> console.log JSON.stringify results, null, 2
   
-  logs: (docke, containers) ->
+  logs: (ducke, containers) ->
     for id in containers
-      docke
+      ducke
         .container id
         .logs (err, stream) ->
           if err?
@@ -89,13 +89,13 @@ module.exports =
             process.exit 1
           stream.pipe process.stdout
   
-  run: (docke, image) ->
+  run: (ducke, image) ->
     run = (err, id) ->
       if err?
         console.error err
         process.exit 1
       
-      docke
+      ducke
         .container id
         .inspect (err, inspect) ->
           if err?
@@ -116,12 +116,12 @@ module.exports =
         process.exit 1
       process.exit code
     
-    docke
+    ducke
       .image image
       .run process.stdin, process.stdout, process.stderr, run, fin
   
-  exec: (docke, container) ->
-    docke
+  exec: (ducke, container) ->
+    ducke
       .container container
       .inspect (err, inspect) ->
         if err?
@@ -135,7 +135,7 @@ module.exports =
         console.log "  #{'exec'.green} #{name} (#{image})"
         console.log()
         
-        docke
+        ducke
           .container container
           .exec process.stdin, process.stdout, process.stderr, (err, code) ->
             if err?
@@ -143,14 +143,14 @@ module.exports =
               process.exit 1
             process.exit code
   
-  stop: (docke, containers) ->
+  stop: (ducke, containers) ->
     tasks = []
     
     console.log()
     for id in containers
       do (id) ->
         tasks.push (cb) ->
-          docke
+          ducke
             .container id
             .stop (err) ->
               if err?
@@ -175,14 +175,14 @@ module.exports =
     
     series tasks, -> console.log()
   
-  rm: (docke, containers) ->
+  rm: (ducke, containers) ->
     tasks = []
     
     console.log()
     for id in containers
       do (id) ->
         tasks.push (cb) ->
-          docke
+          ducke
             .container id
             .rm (err) ->
               if err?
@@ -203,14 +203,14 @@ module.exports =
     
     series tasks, -> console.log()
   
-  kill: (docke, containers) ->
+  kill: (ducke, containers) ->
     tasks = []
     
     console.log()
     for id in containers
       do (id) ->
         tasks.push (cb) ->
-          docke
+          ducke
             .container id
             .kill (err) ->
               if err?

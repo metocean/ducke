@@ -26,15 +26,15 @@ series = function(tasks, callback) {
 };
 
 module.exports = {
-  status: function(docke) {
-    return docke.ping(function(err, isUp) {
+  status: function(ducke) {
+    return ducke.ping(function(err, isUp) {
       if ((err != null) || !isUp) {
         console.error();
         console.error('  docker is down'.red);
         console.error();
         return process.exit(1);
       } else {
-        return docke.ps(function(err, results) {
+        return ducke.ps(function(err, results) {
           var ess, running, stopped;
           if ((err != null) || results.length === 0) {
             console.error();
@@ -61,8 +61,8 @@ module.exports = {
       }
     });
   },
-  ps: function(docke) {
-    return docke.ps(function(err, results) {
+  ps: function(ducke) {
+    return ducke.ps(function(err, results) {
       var image, name, result, status, _i, _len;
       if (err != null) {
         console.error(err);
@@ -88,13 +88,13 @@ module.exports = {
       return console.log();
     });
   },
-  inspect: function(docke, containers) {
+  inspect: function(ducke, containers) {
     var id, results, tasks, _fn, _i, _len;
     tasks = [];
     results = [];
     _fn = function(id) {
       return tasks.push(function(cb) {
-        return docke.container(id).inspect(function(err, inspect) {
+        return ducke.container(id).inspect(function(err, inspect) {
           if (err != null) {
             console.error(err);
             process.exit(1);
@@ -112,12 +112,12 @@ module.exports = {
       return console.log(JSON.stringify(results, null, 2));
     });
   },
-  logs: function(docke, containers) {
+  logs: function(ducke, containers) {
     var id, _i, _len, _results;
     _results = [];
     for (_i = 0, _len = containers.length; _i < _len; _i++) {
       id = containers[_i];
-      _results.push(docke.container(id).logs(function(err, stream) {
+      _results.push(ducke.container(id).logs(function(err, stream) {
         if (err != null) {
           console.error(err);
           process.exit(1);
@@ -127,14 +127,14 @@ module.exports = {
     }
     return _results;
   },
-  run: function(docke, image) {
+  run: function(ducke, image) {
     var fin, run;
     run = function(err, id) {
       if (err != null) {
         console.error(err);
         process.exit(1);
       }
-      return docke.container(id).inspect(function(err, inspect) {
+      return ducke.container(id).inspect(function(err, inspect) {
         var name;
         if (err != null) {
           console.error(err);
@@ -154,10 +154,10 @@ module.exports = {
       }
       return process.exit(code);
     };
-    return docke.image(image).run(process.stdin, process.stdout, process.stderr, run, fin);
+    return ducke.image(image).run(process.stdin, process.stdout, process.stderr, run, fin);
   },
-  exec: function(docke, container) {
-    return docke.container(container).inspect(function(err, inspect) {
+  exec: function(ducke, container) {
+    return ducke.container(container).inspect(function(err, inspect) {
       var image, name;
       if (err != null) {
         console.error(err);
@@ -168,7 +168,7 @@ module.exports = {
       console.log();
       console.log("  " + 'exec'.green + " " + name + " (" + image + ")");
       console.log();
-      return docke.container(container).exec(process.stdin, process.stdout, process.stderr, function(err, code) {
+      return ducke.container(container).exec(process.stdin, process.stdout, process.stderr, function(err, code) {
         if (err != null) {
           console.error(err);
           process.exit(1);
@@ -177,13 +177,13 @@ module.exports = {
       });
     });
   },
-  stop: function(docke, containers) {
+  stop: function(ducke, containers) {
     var id, tasks, _fn, _i, _len;
     tasks = [];
     console.log();
     _fn = function(id) {
       return tasks.push(function(cb) {
-        return docke.container(id).stop(function(err) {
+        return ducke.container(id).stop(function(err) {
           if (err != null) {
             if (err.statusCode === 404) {
               console.error("  " + id.red + " is an unknown container");
@@ -214,13 +214,13 @@ module.exports = {
       return console.log();
     });
   },
-  rm: function(docke, containers) {
+  rm: function(ducke, containers) {
     var id, tasks, _fn, _i, _len;
     tasks = [];
     console.log();
     _fn = function(id) {
       return tasks.push(function(cb) {
-        return docke.container(id).rm(function(err) {
+        return ducke.container(id).rm(function(err) {
           if (err != null) {
             if (err.statusCode === 404) {
               console.error("  " + id.red + " is an unknown container");
@@ -247,13 +247,13 @@ module.exports = {
       return console.log();
     });
   },
-  kill: function(docke, containers) {
+  kill: function(ducke, containers) {
     var id, tasks, _fn, _i, _len;
     tasks = [];
     console.log();
     _fn = function(id) {
       return tasks.push(function(cb) {
-        return docke.container(id).kill(function(err) {
+        return ducke.container(id).kill(function(err) {
           if (err != null) {
             if (err.statusCode === 404) {
               console.error("  " + id.red + " is an unknown container");

@@ -12,7 +12,7 @@ parallel = (tasks, callback) ->
   result(callback) if callback?
   result
 
-module.exports = class Docke
+module.exports = class Ducke
   constructor: (options) ->
     @_modem = new Modem options
   

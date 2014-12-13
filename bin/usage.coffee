@@ -1,13 +1,13 @@
 require 'colors'
 
-Docke = require '../src/docke'
+Ducke = require '../src/ducke'
 commands = require './commands'
 parameters = require '../src/parameters'
 
 usage = """
 👾
 
-  Usage: #{'docke'.cyan} command parameters
+  Usage: #{'ducke'.cyan} command parameters
 
   Commands:
   
@@ -33,46 +33,46 @@ usage_error = (message) =>
   process.exit 1
 
 args = process.argv[2..]
-docke = new Docke parameters args
+ducke = new Ducke parameters args
 
 if args.length is 0
   console.error usage
-  return commands.status docke
+  return commands.status ducke
 
 cmds =
   ps: ->
-    return commands.ps docke if args.length is 0
-    usage_error 'docke ps requires no arguments'
+    return commands.ps ducke if args.length is 0
+    usage_error 'ducke ps requires no arguments'
     
   inspect: ->
-    return commands.inspect docke, args if args.length isnt 0
-    usage_error 'docke inspect requires container names'
+    return commands.inspect ducke, args if args.length isnt 0
+    usage_error 'ducke inspect requires container names'
     
   logs: ->
-    return commands.logs docke, args if args.length isnt 0
-    usage_error 'docke logs requires container names'
+    return commands.logs ducke, args if args.length isnt 0
+    usage_error 'ducke logs requires container names'
     
   run: ->
-    return commands.run docke, args[0] if args.length is 1
-    usage_error 'docke run requires an image name'
+    return commands.run ducke, args[0] if args.length is 1
+    usage_error 'ducke run requires an image name'
     
   exec: ->
-    return commands.exec docke, args[0] if args.length is 1
-    usage_error 'docke exec requires a container name'
+    return commands.exec ducke, args[0] if args.length is 1
+    usage_error 'ducke exec requires a container name'
     
   stop: ->
-    return commands.stop docke, args if args.length isnt 0
-    usage_error 'docke stop requires container names'
+    return commands.stop ducke, args if args.length isnt 0
+    usage_error 'ducke stop requires container names'
     
   rm: ->
-    return commands.rm docke, args if args.length isnt 0
-    usage_error 'docke rm requires container names'
+    return commands.rm ducke, args if args.length isnt 0
+    usage_error 'ducke rm requires container names'
     
   kill: ->
-    return commands.kill docke, args if args.length isnt 0
-    usage_error 'docke kill requires container names'
+    return commands.kill ducke, args if args.length isnt 0
+    usage_error 'ducke kill requires container names'
 
 command = args[0]
 args.shift()
 return cmds[command]() if cmds[command]?
-usage_error "#{command} is not a known docke command"
+usage_error "#{command} is not a known ducke command"

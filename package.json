@@ -1,9 +1,9 @@
 {
-  "name": "docke",
+  "name": "ducke",
   "version": "1.3.0",
   "description": "Do stuff with docker",
   "bin": {
-    "docke": "bin/docke.js"
+    "ducke": "bin/ducke.js"
   },
   "dependencies": {
     "colors": "1.0.3",
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:metocean/docke.git"
+    "url": "git@github.com:metocean/ducke.git"
   },
   "main": "index.js",
   "author": "Thomas Coats",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/metocean/docke/issues"
+    "url": "https://github.com/metocean/ducke/issues"
   },
   "readmeFilename": "README.md",
-  "homepage": "https://github.com/metocean/docke"
+  "homepage": "https://github.com/metocean/ducke"
 }
