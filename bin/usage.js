@@ -89,4 +89,4 @@ if (cmds[command] != null) {
   return cmds[command]();
 }
 
-usage_error("" + command + " is not a known docker command");
+usage_error("" + command + " is not a known docke command");
