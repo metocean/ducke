@@ -56,9 +56,11 @@ module.exports = class Ducke
           return callback errors, results if errors.length > 0
           callback null, results
   
-  createContainer: (params, callback) =>
+  createContainer: (name, params, callback) =>
+    url = '/containers/create'
+    url += "?name=#{name}" if name?
     @_modem
-      .post '/containers/create', params
+      .post url, params
       .result callback
   
   container: (id) =>
@@ -141,7 +143,20 @@ module.exports = class Ducke
                 callback null, 0
   
   image: (id) =>
-    run: (stdin, stdout, stderr, run, fin)  =>
+    up: (name, cmd, fin) =>
+      params =
+        Cmd: cmd
+        Image: id
+      
+      @createContainer name, params, (err, container) =>
+        return fin err if err?
+        id = container.Id
+        container = @container id
+        container.start (err) =>
+          return fin err if err?
+          fin null, id
+    
+    run: (cmd, stdin, stdout, stderr, run, fin)  =>
       params =
         AttachStdin: yes
         AttachStdout: yes
@@ -149,10 +164,10 @@ module.exports = class Ducke
         Tty: yes
         OpenStdin: yes
         StdinOnce: no
-        Cmd: ['bash']
+        Cmd: cmd
         Image: id
       
-      @createContainer params, (err, container) =>
+      @createContainer null, params, (err, container) =>
         return run err if err?
         id = container.Id
         container = @container container.Id

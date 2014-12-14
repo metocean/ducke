@@ -127,7 +127,7 @@ module.exports = {
     }
     return _results;
   },
-  run: function(ducke, image) {
+  run: function(ducke, image, cmd) {
     var fin, run;
     run = function(err, id) {
       if (err != null) {
@@ -154,7 +154,30 @@ module.exports = {
       }
       return process.exit(code);
     };
-    return ducke.image(image).run(process.stdin, process.stdout, process.stderr, run, fin);
+    if ((cmd == null) || cmd.length === 0) {
+      cmd = ['bash'];
+    }
+    return ducke.image(image).run(cmd, process.stdin, process.stdout, process.stderr, run, fin);
+  },
+  up: function(ducke, image, cmd) {
+    return ducke.image(image).up(null, cmd, function(err, id) {
+      if (err != null) {
+        console.error(err);
+        process.exit(1);
+      }
+      return ducke.container(id).inspect(function(err, inspect) {
+        var name;
+        if (err != null) {
+          console.error(err);
+          process.exit(1);
+        }
+        name = inspect.Name.slice(1);
+        image = inspect.Config.Image;
+        console.log();
+        console.log("  " + 'running'.green + " " + name + " (" + image + ")");
+        return console.log();
+      });
+    });
   },
   exec: function(ducke, container) {
     return ducke.container(container).inspect(function(err, inspect) {

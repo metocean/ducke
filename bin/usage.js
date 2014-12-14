@@ -9,7 +9,7 @@ commands = require('./commands');
 
 parameters = require('../src/parameters');
 
-usage = "👾\n\n  Usage: " + 'ducke'.cyan + " command parameters\n\n  Commands:\n  \n    ps        List all running containers\n    logs      Attach to container logs\n    run       Start a shell inside a new container\n    exec      Start a shell inside an existing container\n  \n  Docker management:\n  \n    inspect   Show details about containers\n    kill      Send SIGTERM to running containers\n    stop      Stop containers\n    rm        Delete containers\n";
+usage = "👾\n\n  Usage: " + 'ducke'.cyan + " command parameters\n\n  Commands:\n  \n    ps        List all running containers\n    logs      Attach to container logs\n    run       Start a shell inside a new container\n    exec      Start a shell inside an existing container\n    up        Start a new container\n  \n  Docker management:\n  \n    inspect   Show details about containers\n    kill      Send SIGTERM to running containers\n    stop      Stop containers\n    rm        Delete containers\n";
 
 usage_error = (function(_this) {
   return function(message) {
@@ -50,10 +50,16 @@ cmds = {
     return usage_error('ducke logs requires container names');
   },
   run: function() {
-    if (args.length === 1) {
-      return commands.run(ducke, args[0]);
+    if (args.length > 0) {
+      return commands.run(ducke, args[0], args.slice(1));
     }
     return usage_error('ducke run requires an image name');
+  },
+  up: function() {
+    if (args.length > 1) {
+      return commands.up(ducke, args[0], args.slice(1));
+    }
+    return usage_error('ducke up requires an image name and command');
   },
   exec: function() {
     if (args.length === 1) {

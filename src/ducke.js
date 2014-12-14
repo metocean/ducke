@@ -101,8 +101,13 @@ module.exports = Ducke = (function() {
     })(this));
   };
 
-  Ducke.prototype.createContainer = function(params, callback) {
-    return this._modem.post('/containers/create', params).result(callback);
+  Ducke.prototype.createContainer = function(name, params, callback) {
+    var url;
+    url = '/containers/create';
+    if (name != null) {
+      url += "?name=" + name;
+    }
+    return this._modem.post(url, params).result(callback);
   };
 
   Ducke.prototype.container = function(id) {
@@ -200,8 +205,30 @@ module.exports = Ducke = (function() {
 
   Ducke.prototype.image = function(id) {
     return {
+      up: (function(_this) {
+        return function(name, cmd, fin) {
+          var params;
+          params = {
+            Cmd: cmd,
+            Image: id
+          };
+          return _this.createContainer(name, params, function(err, container) {
+            if (err != null) {
+              return fin(err);
+            }
+            id = container.Id;
+            container = _this.container(id);
+            return container.start(function(err) {
+              if (err != null) {
+                return fin(err);
+              }
+              return fin(null, id);
+            });
+          });
+        };
+      })(this),
       run: (function(_this) {
-        return function(stdin, stdout, stderr, run, fin) {
+        return function(cmd, stdin, stdout, stderr, run, fin) {
           var params;
           params = {
             AttachStdin: true,
@@ -210,10 +237,10 @@ module.exports = Ducke = (function() {
             Tty: true,
             OpenStdin: true,
             StdinOnce: false,
-            Cmd: ['bash'],
+            Cmd: cmd,
             Image: id
           };
-          return _this.createContainer(params, function(err, container) {
+          return _this.createContainer(null, params, function(err, container) {
             if (err != null) {
               return run(err);
             }
