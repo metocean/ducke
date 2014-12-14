@@ -111,13 +111,13 @@ module.exports = class Ducke
         .post "/containers/#{id}/kill?signal=SIGTERM", {}
         .result callback
     
-    exec: (stdin, stdout, stderr, callback) =>
+    exec: (cmd, stdin, stdout, stderr, callback) =>
       params =
         AttachStdin: yes
         AttachStdout: yes
         AttachStderr: yes
         Tty: yes
-        Cmd: ['bash']
+        Cmd: cmd
       
       @_modem
         .post "/containers/#{id}/exec", params

@@ -163,14 +163,14 @@ module.exports = Ducke = (function() {
         };
       })(this),
       exec: (function(_this) {
-        return function(stdin, stdout, stderr, callback) {
+        return function(cmd, stdin, stdout, stderr, callback) {
           var params;
           params = {
             AttachStdin: true,
             AttachStdout: true,
             AttachStderr: true,
             Tty: true,
-            Cmd: ['bash']
+            Cmd: cmd
           };
           return _this._modem.post("/containers/" + id + "/exec", params).result(function(err, exec) {
             if (err != null) {

@@ -141,7 +141,7 @@ module.exports =
             console.log "  #{'running'.green} #{name} (#{image})"
             console.log()
   
-  exec: (ducke, container) ->
+  exec: (ducke, container, cmd) ->
     ducke
       .container container
       .inspect (err, inspect) ->
@@ -156,9 +156,10 @@ module.exports =
         console.log "  #{'exec'.green} #{name} (#{image})"
         console.log()
         
+        cmd = ['bash'] if !cmd? or cmd.length is 0
         ducke
           .container container
-          .exec process.stdin, process.stdout, process.stderr, (err, code) ->
+          .exec cmd, process.stdin, process.stdout, process.stderr, (err, code) ->
             if err?
               console.error err
               process.exit 1

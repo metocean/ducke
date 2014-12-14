@@ -13,9 +13,9 @@ usage = """
   
     ps        List all running containers
     logs      Attach to container logs
-    run       Start a shell inside a new container
-    exec      Start a shell inside an existing container
+    run       Start new container interactively
     up        Start a new container
+    exec      Start a shell inside an existing container
   
   Docker management:
   
@@ -62,7 +62,7 @@ cmds =
     usage_error 'ducke up requires an image name and command'
     
   exec: ->
-    return commands.exec ducke, args[0] if args.length is 1
+    return commands.exec ducke, args[0], args[1..] if args.length > 0
     usage_error 'ducke exec requires a container name'
     
   stop: ->

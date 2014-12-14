@@ -179,7 +179,7 @@ module.exports = {
       });
     });
   },
-  exec: function(ducke, container) {
+  exec: function(ducke, container, cmd) {
     return ducke.container(container).inspect(function(err, inspect) {
       var image, name;
       if (err != null) {
@@ -191,7 +191,10 @@ module.exports = {
       console.log();
       console.log("  " + 'exec'.green + " " + name + " (" + image + ")");
       console.log();
-      return ducke.container(container).exec(process.stdin, process.stdout, process.stderr, function(err, code) {
+      if ((cmd == null) || cmd.length === 0) {
+        cmd = ['bash'];
+      }
+      return ducke.container(container).exec(cmd, process.stdin, process.stdout, process.stderr, function(err, code) {
         if (err != null) {
           console.error(err);
           process.exit(1);
