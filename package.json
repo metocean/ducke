@@ -1,6 +1,6 @@
 {
   "name": "ducke",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Do stuff with docker",
   "bin": {
     "ducke": "bin/ducke.js"
