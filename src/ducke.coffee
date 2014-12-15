@@ -1,5 +1,7 @@
 Modem = require './modem'
 demux = require './demuxstream'
+tardir = require './tardir'
+stream = require 'stream'
 
 parallel = (tasks, callback) ->
   count = tasks.length
@@ -143,20 +145,40 @@ module.exports = class Ducke
                 callback null, 0
   
   image: (id) =>
-    up: (name, cmd, fin) =>
+    build: (path, run, callback) =>
+      archive = tardir path
+        .on 'error', callback
+      
+      @_modem
+        .postFile "/build?t=#{id}", archive
+        .stream (err, output) ->
+          return callback err if err?
+          
+          output.on 'data', (data) ->
+            data = JSON.parse data
+            return callback data.error if data.error?
+            lines = data.stream
+              .split '\n'
+              .filter (d) -> d isnt ''
+            for line in lines
+              run line
+          
+          output.on 'end', callback
+    
+    up: (name, cmd, callback) =>
       params =
         Cmd: cmd
         Image: id
       
       @createContainer name, params, (err, container) =>
-        return fin err if err?
+        return callback err if err?
         id = container.Id
         container = @container id
         container.start (err) =>
-          return fin err if err?
-          fin null, id
+          return callback err if err?
+          callback null, id
     
-    run: (cmd, stdin, stdout, stderr, run, fin)  =>
+    run: (cmd, stdin, stdout, stderr, run, callback)  =>
       params =
         AttachStdin: yes
         AttachStdout: yes
@@ -185,7 +207,7 @@ module.exports = class Ducke
           stdin.pipe stream
           
           container.start (err) =>
-            return fin err if err?
+            return callback err if err?
             
             kill = (signal) =>
               stream.unpipe stdout
@@ -203,8 +225,8 @@ module.exports = class Ducke
               process.exit 1
             
             container.wait (err, result) =>
-              return fin err if err?
+              return callback err if err?
               container.rm (err) ->
-                return fin err if err?
-                fin null, result.StatusCode
+                return callback err if err?
+                callback null, result.StatusCode
       

@@ -13,12 +13,13 @@ usage = """
   
     ps        List all running containers
     logs      Attach to container logs
-    run       Start new container interactively
+    run       Start a new container interactively
     up        Start a new container
-    exec      Start a shell inside an existing container
+    exec      Run a command inside an existing container
   
   Docker management:
   
+    build     Build an image from a Dockerfile
     inspect   Show details about containers
     kill      Send SIGTERM to running containers
     stop      Stop containers
@@ -64,7 +65,11 @@ cmds =
   exec: ->
     return commands.exec ducke, args[0], args[1..] if args.length > 0
     usage_error 'ducke exec requires a container name'
-    
+  
+  build: ->
+    return commands.build ducke, args[0] if args.length is 1
+    usage_error 'ducke build requires an image name'
+  
   stop: ->
     return commands.stop ducke, args if args.length isnt 0
     usage_error 'ducke stop requires container names'
