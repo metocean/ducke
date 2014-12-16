@@ -211,29 +211,33 @@ module.exports = Ducke = (function() {
     return {
       build: (function(_this) {
         return function(path, run, callback) {
-          var archive;
-          archive = tardir(path).on('error', callback);
-          return _this._modem.postFile("/build?t=" + id, archive).stream(function(err, output) {
+          return tardir(path, function(err, archive) {
             if (err != null) {
               return callback(err);
             }
-            output.on('data', function(data) {
-              var line, lines, _i, _len, _results;
-              data = JSON.parse(data);
-              if (data.error != null) {
-                return callback(data.error);
+            archive.on('error', callback);
+            return _this._modem.postFile("/build?t=" + id, archive).stream(function(err, output) {
+              if (err != null) {
+                return callback(err);
               }
-              lines = data.stream.split('\n').filter(function(d) {
-                return d !== '';
+              output.on('data', function(data) {
+                var line, lines, _i, _len, _results;
+                data = JSON.parse(data);
+                if (data.error != null) {
+                  return callback(data.error);
+                }
+                lines = data.stream.split('\n').filter(function(d) {
+                  return d !== '';
+                });
+                _results = [];
+                for (_i = 0, _len = lines.length; _i < _len; _i++) {
+                  line = lines[_i];
+                  _results.push(run(line));
+                }
+                return _results;
               });
-              _results = [];
-              for (_i = 0, _len = lines.length; _i < _len; _i++) {
-                line = lines[_i];
-                _results.push(run(line));
-              }
-              return _results;
+              return output.on('end', callback);
             });
-            return output.on('end', callback);
           });
         };
       })(this),

@@ -146,24 +146,25 @@ module.exports = class Ducke
   
   image: (id) =>
     build: (path, run, callback) =>
-      archive = tardir path
-        .on 'error', callback
-      
-      @_modem
-        .postFile "/build?t=#{id}", archive
-        .stream (err, output) ->
-          return callback err if err?
-          
-          output.on 'data', (data) ->
-            data = JSON.parse data
-            return callback data.error if data.error?
-            lines = data.stream
-              .split '\n'
-              .filter (d) -> d isnt ''
-            for line in lines
-              run line
-          
-          output.on 'end', callback
+      tardir path, (err, archive) =>
+        return callback err if err?
+        archive.on 'error', callback
+        
+        @_modem
+          .postFile "/build?t=#{id}", archive
+          .stream (err, output) ->
+            return callback err if err?
+            
+            output.on 'data', (data) ->
+              data = JSON.parse data
+              return callback data.error if data.error?
+              lines = data.stream
+                .split '\n'
+                .filter (d) -> d isnt ''
+              for line in lines
+                run line
+            
+            output.on 'end', callback
     
     up: (name, cmd, callback) =>
       params =
