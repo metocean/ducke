@@ -144,12 +144,12 @@ module.exports = class Ducke
                 stdin.resume()
                 callback null, 0
   
-  build_image: (id, path, nocache, run, callback) =>
+  build_image: (id, path, usecache, run, callback) =>
     tardir path, (err, archive) =>
       return callback err if err?
       archive.on 'error', callback
       cache = ''
-      cache = '&nocache=true' if nocache
+      cache = '&nocache=true' if !usecache
       
       @_modem
         .postFile "/build?t=#{id}#{cache}", archive
@@ -169,10 +169,10 @@ module.exports = class Ducke
   
   image: (id) =>
     rebuild: (path, run, callback) =>
-      @build_image id, path, yes, run, callback
+      @build_image id, path, no, run, callback
     
     build: (path, run, callback) =>
-      @build_image id, path, no, run, callback
+      @build_image id, path, yes, run, callback
     
     up: (name, cmd, callback) =>
       params =

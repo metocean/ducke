@@ -208,7 +208,7 @@ module.exports = Ducke = (function() {
     };
   };
 
-  Ducke.prototype.build_image = function(id, path, nocache, run, callback) {
+  Ducke.prototype.build_image = function(id, path, usecache, run, callback) {
     return tardir(path, (function(_this) {
       return function(err, archive) {
         var cache;
@@ -217,7 +217,7 @@ module.exports = Ducke = (function() {
         }
         archive.on('error', callback);
         cache = '';
-        if (nocache) {
+        if (!usecache) {
           cache = '&nocache=true';
         }
         return _this._modem.postFile("/build?t=" + id + cache, archive).stream(function(err, output) {
@@ -250,12 +250,12 @@ module.exports = Ducke = (function() {
     return {
       rebuild: (function(_this) {
         return function(path, run, callback) {
-          return _this.build_image(id, path, true, run, callback);
+          return _this.build_image(id, path, false, run, callback);
         };
       })(this),
       build: (function(_this) {
         return function(path, run, callback) {
-          return _this.build_image(id, path, false, run, callback);
+          return _this.build_image(id, path, true, run, callback);
         };
       })(this),
       up: (function(_this) {
