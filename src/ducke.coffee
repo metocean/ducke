@@ -144,27 +144,35 @@ module.exports = class Ducke
                 stdin.resume()
                 callback null, 0
   
+  build_image: (id, path, nocache, run, callback) =>
+    tardir path, (err, archive) =>
+      return callback err if err?
+      archive.on 'error', callback
+      cache = ''
+      cache = '&nocache=true' if nocache
+      
+      @_modem
+        .postFile "/build?t=#{id}#{cache}", archive
+        .stream (err, output) ->
+          return callback err if err?
+          
+          output.on 'data', (data) ->
+            data = JSON.parse data
+            return callback data.error if data.error?
+            lines = data.stream
+              .split '\n'
+              .filter (d) -> d isnt ''
+            for line in lines
+              run line
+          
+          output.on 'end', callback
+  
   image: (id) =>
+    rebuild: (path, run, callback) =>
+      @build_image id, path, yes, run, callback
+    
     build: (path, run, callback) =>
-      tardir path, (err, archive) =>
-        return callback err if err?
-        archive.on 'error', callback
-        
-        @_modem
-          .postFile "/build?t=#{id}", archive
-          .stream (err, output) ->
-            return callback err if err?
-            
-            output.on 'data', (data) ->
-              data = JSON.parse data
-              return callback data.error if data.error?
-              lines = data.stream
-                .split '\n'
-                .filter (d) -> d isnt ''
-              for line in lines
-                run line
-            
-            output.on 'end', callback
+      @build_image id, path, no, run, callback
     
     up: (name, cmd, callback) =>
       params =

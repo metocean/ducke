@@ -9,7 +9,7 @@ commands = require('./commands');
 
 parameters = require('../src/parameters');
 
-usage = "👾\n\n  Usage: " + 'ducke'.cyan + " command parameters\n\n  Commands:\n  \n    ps        List all running containers\n    logs      Attach to container logs\n    run       Start a new container interactively\n    up        Start a new container\n    exec      Run a command inside an existing container\n  \n  Docker management:\n  \n    build     Build an image from a Dockerfile\n    inspect   Show details about containers\n    kill      Send SIGTERM to running containers\n    stop      Stop containers\n    rm        Delete containers\n";
+usage = "👾\n\n  Usage: " + 'ducke'.cyan + " command parameters\n\n  Commands:\n  \n    ps        List all running containers\n    logs      Attach to container logs\n    run       Start a new container interactively\n    up        Start a new container\n    exec      Run a command inside an existing container\n  \n  Docker management:\n  \n    build     Build an image from a Dockerfile\n    rebuild   Build an image from a Dockerfile from scratch\n    inspect   Show details about containers\n    kill      Send SIGTERM to running containers\n    stop      Stop containers\n    rm        Delete containers\n";
 
 usage_error = (function(_this) {
   return function(message) {
@@ -70,6 +70,12 @@ cmds = {
   build: function() {
     if (args.length === 1) {
       return commands.build(ducke, args[0]);
+    }
+    return usage_error('ducke build requires an image name');
+  },
+  rebuild: function() {
+    if (args.length === 1) {
+      return commands.rebuild(ducke, args[0]);
     }
     return usage_error('ducke build requires an image name');
   },

@@ -20,6 +20,7 @@ usage = """
   Docker management:
   
     build     Build an image from a Dockerfile
+    rebuild   Build an image from a Dockerfile from scratch
     inspect   Show details about containers
     kill      Send SIGTERM to running containers
     stop      Stop containers
@@ -68,6 +69,10 @@ cmds =
   
   build: ->
     return commands.build ducke, args[0] if args.length is 1
+    usage_error 'ducke build requires an image name'
+  
+  rebuild: ->
+    return commands.rebuild ducke, args[0] if args.length is 1
     usage_error 'ducke build requires an image name'
   
   stop: ->

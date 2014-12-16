@@ -39,6 +39,7 @@ parallel = function(tasks, callback) {
 module.exports = Ducke = (function() {
   function Ducke(options) {
     this.image = __bind(this.image, this);
+    this.build_image = __bind(this.build_image, this);
     this.container = __bind(this.container, this);
     this.createContainer = __bind(this.createContainer, this);
     this.ps = __bind(this.ps, this);
@@ -207,38 +208,54 @@ module.exports = Ducke = (function() {
     };
   };
 
+  Ducke.prototype.build_image = function(id, path, nocache, run, callback) {
+    return tardir(path, (function(_this) {
+      return function(err, archive) {
+        var cache;
+        if (err != null) {
+          return callback(err);
+        }
+        archive.on('error', callback);
+        cache = '';
+        if (nocache) {
+          cache = '&nocache=true';
+        }
+        return _this._modem.postFile("/build?t=" + id + cache, archive).stream(function(err, output) {
+          if (err != null) {
+            return callback(err);
+          }
+          output.on('data', function(data) {
+            var line, lines, _i, _len, _results;
+            data = JSON.parse(data);
+            if (data.error != null) {
+              return callback(data.error);
+            }
+            lines = data.stream.split('\n').filter(function(d) {
+              return d !== '';
+            });
+            _results = [];
+            for (_i = 0, _len = lines.length; _i < _len; _i++) {
+              line = lines[_i];
+              _results.push(run(line));
+            }
+            return _results;
+          });
+          return output.on('end', callback);
+        });
+      };
+    })(this));
+  };
+
   Ducke.prototype.image = function(id) {
     return {
+      rebuild: (function(_this) {
+        return function(path, run, callback) {
+          return _this.build_image(id, path, true, run, callback);
+        };
+      })(this),
       build: (function(_this) {
         return function(path, run, callback) {
-          return tardir(path, function(err, archive) {
-            if (err != null) {
-              return callback(err);
-            }
-            archive.on('error', callback);
-            return _this._modem.postFile("/build?t=" + id, archive).stream(function(err, output) {
-              if (err != null) {
-                return callback(err);
-              }
-              output.on('data', function(data) {
-                var line, lines, _i, _len, _results;
-                data = JSON.parse(data);
-                if (data.error != null) {
-                  return callback(data.error);
-                }
-                lines = data.stream.split('\n').filter(function(d) {
-                  return d !== '';
-                });
-                _results = [];
-                for (_i = 0, _len = lines.length; _i < _len; _i++) {
-                  line = lines[_i];
-                  _results.push(run(line));
-                }
-                return _results;
-              });
-              return output.on('end', callback);
-            });
-          });
+          return _this.build_image(id, path, false, run, callback);
         };
       })(this),
       up: (function(_this) {

@@ -211,6 +211,14 @@ module.exports = {
       }
     });
   },
+  rebuild: function(ducke, id) {
+    return ducke.image(id).rebuild(process.cwd(), console.log, function(err) {
+      if (err != null) {
+        console.error(err);
+        return process.exit(1);
+      }
+    });
+  },
   stop: function(ducke, containers) {
     var id, tasks, _fn, _i, _len;
     tasks = [];
