@@ -25,6 +25,8 @@ usage = """
     kill      Send SIGTERM to running containers
     stop      Stop containers
     rm        Delete containers
+    ls        List available images
+    orphans   List all orphaned images
 
 """
 
@@ -46,23 +48,23 @@ cmds =
   ps: ->
     return commands.ps ducke if args.length is 0
     usage_error 'ducke ps requires no arguments'
-    
+  
   inspect: ->
     return commands.inspect ducke, args if args.length isnt 0
     usage_error 'ducke inspect requires container names'
-    
+  
   logs: ->
     return commands.logs ducke, args if args.length isnt 0
     usage_error 'ducke logs requires container names'
-    
+  
   run: ->
     return commands.run ducke, args[0], args[1..] if args.length > 0
     usage_error 'ducke run requires an image name'
-    
+  
   up: ->
     return commands.up ducke, args[0], args[1..] if args.length > 1
     usage_error 'ducke up requires an image name and command'
-    
+  
   exec: ->
     return commands.exec ducke, args[0], args[1..] if args.length > 0
     usage_error 'ducke exec requires a container name'
@@ -78,14 +80,22 @@ cmds =
   stop: ->
     return commands.stop ducke, args if args.length isnt 0
     usage_error 'ducke stop requires container names'
-    
+  
   rm: ->
     return commands.rm ducke, args if args.length isnt 0
     usage_error 'ducke rm requires container names'
-    
+  
   kill: ->
     return commands.kill ducke, args if args.length isnt 0
     usage_error 'ducke kill requires container names'
+  
+  ls: ->
+    return commands.ls ducke if args.length is 0
+    usage_error 'ducke ls requires no arguments'
+  
+  orphans: ->
+    return commands.orphans ducke if args.length is 0
+    usage_error 'ducke orphans requires no arguments'
 
 command = args[0]
 args.shift()

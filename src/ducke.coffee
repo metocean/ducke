@@ -1,6 +1,7 @@
 Modem = require './modem'
 demux = require './demuxstream'
 tardir = require './tardir'
+groupimages = require './groupimages'
 stream = require 'stream'
 
 parallel = (tasks, callback) ->
@@ -27,7 +28,7 @@ module.exports = class Ducke
   
   ps: (callback)  =>
     @_modem
-      .get '/containers/json?all=1'
+      .get '/containers/json'
       .result (err, containers) =>
         return callback err if err?
         results = []
@@ -57,6 +58,13 @@ module.exports = class Ducke
           
           return callback errors, results if errors.length > 0
           callback null, results
+  
+  ls: (callback)  =>
+    @_modem
+      .get '/images/json?all=1'
+      .result (err, images) =>
+        return callback err if err?
+        callback null, groupimages images
   
   createContainer: (name, params, callback) =>
     url = '/containers/create'

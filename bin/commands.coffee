@@ -268,3 +268,64 @@ module.exports =
               cb()
     
     series tasks, -> console.log()
+  
+  ls: (ducke) ->
+    nest = (nodes, indent) ->
+      for node in nodes
+        # should we skip?
+        if node.image.RepoTags[0] is '<none>:<none>' and node.children? and node.children.length > 0
+          nest node.children, indent
+          continue
+        
+        space = ''
+        space += '  ' while space.length < 2 *indent
+        
+        output = "  #{space}#{node.image.Id.substr 0, 12}"
+        if node.image.RepoTags.length is 1 and node.image.RepoTags[0] is '<none>:<none>'
+          if node.children.length is 0
+            output += ' orphan'.magenta
+          
+        else
+          for tag in node.image.RepoTags
+            output += " #{tag}".cyan
+        
+        console.log output
+        if node.children?
+          nest node.children, indent + 1
+    
+    ducke.ls (err, root) ->
+      if err?
+        console.error err
+        console.error JSON.stringify err
+        process.exit 1
+      
+      console.log()
+      nest root, 0
+      console.log()
+  
+  orphans: (ducke) ->
+    ducke.ls (err, root) ->
+      if err?
+        console.error err
+        console.error JSON.stringify err
+        process.exit 1
+      
+      orphans = []
+      
+      nest = (nodes) ->
+        for node in nodes
+          # is this an orphan?
+          if node.image.RepoTags.length is 1 and node.image.RepoTags[0] is '<none>:<none>' and node.children.length is 0
+            orphans.push node
+            continue
+          nest node.children
+      
+      console.log()
+      nest root, 0
+      
+      if orphans.length is 0
+        console.log '  There are no orphaned images on this system.'.magenta
+      else
+        for node in orphans
+          console.log "#{node.image.Id.substr 0, 12}"
+      console.log()
