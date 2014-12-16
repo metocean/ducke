@@ -56,7 +56,7 @@ cmds = {
     return usage_error('ducke run requires an image name');
   },
   up: function() {
-    if (args.length > 1) {
+    if (args.length > 0) {
       return commands.up(ducke, args[0], args.slice(1));
     }
     return usage_error('ducke up requires an image name and command');

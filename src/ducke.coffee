@@ -28,7 +28,7 @@ module.exports = class Ducke
   
   ps: (callback)  =>
     @_modem
-      .get '/containers/json'
+      .get '/containers/json?all=1'
       .result (err, containers) =>
         return callback err if err?
         results = []
@@ -184,8 +184,10 @@ module.exports = class Ducke
     
     up: (name, cmd, callback) =>
       params =
-        Cmd: cmd
         Image: id
+      
+      if cmd.length > 0
+        params.Cmd = cmd
       
       @createContainer name, params, (err, container) =>
         return callback err if err?

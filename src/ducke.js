@@ -60,7 +60,7 @@ module.exports = Ducke = (function() {
   };
 
   Ducke.prototype.ps = function(callback) {
-    return this._modem.get('/containers/json').result((function(_this) {
+    return this._modem.get('/containers/json?all=1').result((function(_this) {
       return function(err, containers) {
         var container, errors, results, tasks, _fn, _i, _len;
         if (err != null) {
@@ -276,9 +276,11 @@ module.exports = Ducke = (function() {
         return function(name, cmd, callback) {
           var params;
           params = {
-            Cmd: cmd,
             Image: id
           };
+          if (cmd.length > 0) {
+            params.Cmd = cmd;
+          }
           return _this.createContainer(name, params, function(err, container) {
             if (err != null) {
               return callback(err);

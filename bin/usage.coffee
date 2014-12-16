@@ -62,7 +62,7 @@ cmds =
     usage_error 'ducke run requires an image name'
   
   up: ->
-    return commands.up ducke, args[0], args[1..] if args.length > 1
+    return commands.up ducke, args[0], args[1..] if args.length > 0
     usage_error 'ducke up requires an image name and command'
   
   exec: ->
