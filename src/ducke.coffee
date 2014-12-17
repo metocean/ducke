@@ -197,6 +197,11 @@ module.exports = class Ducke
           return callback err if err?
           callback null, id
     
+    rm: (callback) =>
+      @_modem
+        .delete "/images/#{id}"
+        .result callback
+    
     run: (cmd, stdin, stdout, stderr, run, callback)  =>
       params =
         AttachStdin: yes

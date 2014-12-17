@@ -24,7 +24,12 @@ module.exports = (images) ->
     if node.image.ParentId isnt ''
       byid[node.image.ParentId].children.push node
   
-  result = []
+  result =
+    images: []
+    graph: []
+  for _, value of byid
+    result.images.push value
   for _, value of root
-    result.push value
+    result.graph.push value
+  
   result

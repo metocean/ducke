@@ -31,10 +31,17 @@ module.exports = function(images) {
       byid[node.image.ParentId].children.push(node);
     }
   }
-  result = [];
+  result = {
+    images: [],
+    graph: []
+  };
+  for (_ in byid) {
+    value = byid[_];
+    result.images.push(value);
+  }
   for (_ in root) {
     value = root[_];
-    result.push(value);
+    result.graph.push(value);
   }
   return result;
 };

@@ -293,18 +293,18 @@ module.exports =
         if node.children?
           nest node.children, indent + 1
     
-    ducke.ls (err, root) ->
+    ducke.ls (err, result) ->
       if err?
         console.error err
         console.error JSON.stringify err
         process.exit 1
       
       console.log()
-      nest root, 0
+      nest result.graph, 0
       console.log()
   
   orphans: (ducke) ->
-    ducke.ls (err, root) ->
+    ducke.ls (err, result) ->
       if err?
         console.error err
         console.error JSON.stringify err
@@ -312,16 +312,10 @@ module.exports =
       
       orphans = []
       
-      nest = (nodes) ->
-        for node in nodes
-          # is this an orphan?
-          if node.image.RepoTags.length is 1 and node.image.RepoTags[0] is '<none>:<none>' and node.children.length is 0
-            orphans.push node
-            continue
-          nest node.children
-      
       console.log()
-      nest root, 0
+      for node in result.images
+        if node.image.RepoTags.length is 1 and node.image.RepoTags[0] is '<none>:<none>' and node.children.length is 0
+            orphans.push node
       
       if orphans.length is 0
         console.log '  There are no orphaned images on this system.'.magenta
@@ -329,3 +323,31 @@ module.exports =
         for node in orphans
           console.log "#{node.image.Id.substr 0, 12}"
       console.log()
+  
+  rmi: (ducke, images) ->
+    tasks = []
+    
+    console.log()
+    for id in images
+      do (id) ->
+        tasks.push (cb) ->
+          ducke
+            .image id
+            .rm (err) ->
+              if err?
+                if err.statusCode is 404
+                  console.error "  #{id.red} is an unknown image"
+                  return cb()
+                
+                if err.statusCode is 500
+                  console.error "  could not delete #{id.red}"
+                  return cb()
+                
+                console.error err
+                console.error JSON.stringify err
+                process.exit 1
+              
+              console.log "  #{'deleted'.green} #{id}"
+              cb()
+    
+    series tasks, -> console.log()

@@ -9,7 +9,7 @@ commands = require('./commands');
 
 parameters = require('../src/parameters');
 
-usage = "👾\n\n  Usage: " + 'ducke'.cyan + " command parameters\n\n  Commands:\n  \n    ps        List all running containers\n    logs      Attach to container logs\n    run       Start a new container interactively\n    up        Start a new container\n    exec      Run a command inside an existing container\n  \n  Docker management:\n  \n    build     Build an image from a Dockerfile\n    rebuild   Build an image from a Dockerfile from scratch\n    inspect   Show details about containers\n    kill      Send SIGTERM to running containers\n    stop      Stop containers\n    rm        Delete containers\n    ls        List available images\n    orphans   List all orphaned images\n";
+usage = "👾\n\n  Usage: " + 'ducke'.cyan + " command parameters\n\n  Commands:\n  \n    ps        List all running containers\n    logs      Attach to container logs\n    run       Start a new container interactively\n    up        Start a new container\n    exec      Run a command inside an existing container\n  \n  Docker management:\n  \n    build     Build an image from a Dockerfile\n    rebuild   Build an image from a Dockerfile from scratch\n    inspect   Show details about containers\n    kill      Send SIGTERM to running containers\n    stop      Stop containers\n    rm        Delete containers\n    ls        List available images\n    orphans   List all orphaned images\n    rmi       Delete images\n";
 
 usage_error = (function(_this) {
   return function(message) {
@@ -108,6 +108,12 @@ cmds = {
       return commands.orphans(ducke);
     }
     return usage_error('ducke orphans requires no arguments');
+  },
+  rmi: function() {
+    if (args.length !== 0) {
+      return commands.rmi(ducke, args);
+    }
+    return usage_error('ducke rmi requires image names');
   }
 };
 

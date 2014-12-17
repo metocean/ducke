@@ -358,49 +358,75 @@ module.exports = {
       }
       return _results;
     };
-    return ducke.ls(function(err, root) {
+    return ducke.ls(function(err, result) {
       if (err != null) {
         console.error(err);
         console.error(JSON.stringify(err));
         process.exit(1);
       }
       console.log();
-      nest(root, 0);
+      nest(result.graph, 0);
       return console.log();
     });
   },
   orphans: function(ducke) {
-    return ducke.ls(function(err, root) {
-      var nest, node, orphans, _i, _len;
+    return ducke.ls(function(err, result) {
+      var node, orphans, _i, _j, _len, _len1, _ref;
       if (err != null) {
         console.error(err);
         console.error(JSON.stringify(err));
         process.exit(1);
       }
       orphans = [];
-      nest = function(nodes) {
-        var node, _i, _len, _results;
-        _results = [];
-        for (_i = 0, _len = nodes.length; _i < _len; _i++) {
-          node = nodes[_i];
-          if (node.image.RepoTags.length === 1 && node.image.RepoTags[0] === '<none>:<none>' && node.children.length === 0) {
-            orphans.push(node);
-            continue;
-          }
-          _results.push(nest(node.children));
-        }
-        return _results;
-      };
       console.log();
-      nest(root, 0);
+      _ref = result.images;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        node = _ref[_i];
+        if (node.image.RepoTags.length === 1 && node.image.RepoTags[0] === '<none>:<none>' && node.children.length === 0) {
+          orphans.push(node);
+        }
+      }
       if (orphans.length === 0) {
         console.log('  There are no orphaned images on this system.'.magenta);
       } else {
-        for (_i = 0, _len = orphans.length; _i < _len; _i++) {
-          node = orphans[_i];
+        for (_j = 0, _len1 = orphans.length; _j < _len1; _j++) {
+          node = orphans[_j];
           console.log("" + (node.image.Id.substr(0, 12)));
         }
       }
+      return console.log();
+    });
+  },
+  rmi: function(ducke, images) {
+    var id, tasks, _fn, _i, _len;
+    tasks = [];
+    console.log();
+    _fn = function(id) {
+      return tasks.push(function(cb) {
+        return ducke.image(id).rm(function(err) {
+          if (err != null) {
+            if (err.statusCode === 404) {
+              console.error("  " + id.red + " is an unknown image");
+              return cb();
+            }
+            if (err.statusCode === 500) {
+              console.error("  could not delete " + id.red);
+              return cb();
+            }
+            console.error(err);
+            console.error(JSON.stringify(err));
+            process.exit(1);
+          }
+          console.log("  " + 'deleted'.green + " " + id);
+          return cb();
+        });
+      });
+    };
+    for (_i = 0, _len = images.length; _i < _len; _i++) {
+      id = images[_i];
+      _fn(id);
+    }
+    return series(tasks, function() {
       return console.log();
     });
   }

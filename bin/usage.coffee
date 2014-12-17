@@ -27,6 +27,7 @@ usage = """
     rm        Delete containers
     ls        List available images
     orphans   List all orphaned images
+    rmi       Delete images
 
 """
 
@@ -96,6 +97,10 @@ cmds =
   orphans: ->
     return commands.orphans ducke if args.length is 0
     usage_error 'ducke orphans requires no arguments'
+  
+  rmi: ->
+    return commands.rmi ducke, args if args.length isnt 0
+    usage_error 'ducke rmi requires image names'
 
 command = args[0]
 args.shift()
