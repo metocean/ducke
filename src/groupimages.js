@@ -11,9 +11,10 @@ example = {
 };
 
 module.exports = function(images) {
-  var byid, image, node, result, root, value, _, _i, _len;
+  var byid, bytag, image, node, result, root, tag, value, _, _i, _j, _len, _len1, _ref;
   root = {};
   byid = {};
+  bytag = {};
   for (_i = 0, _len = images.length; _i < _len; _i++) {
     image = images[_i];
     node = {
@@ -24,6 +25,14 @@ module.exports = function(images) {
     if (image.ParentId === '') {
       root[image.Id] = node;
     }
+    _ref = image.RepoTags;
+    for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+      tag = _ref[_j];
+      if (tag === '<none>:<none>') {
+        continue;
+      }
+      bytag[tag] = node;
+    }
   }
   for (_ in byid) {
     node = byid[_];
@@ -33,7 +42,9 @@ module.exports = function(images) {
   }
   result = {
     images: [],
-    graph: []
+    graph: [],
+    tags: bytag,
+    ids: byid
   };
   for (_ in byid) {
     value = byid[_];

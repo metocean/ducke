@@ -9,7 +9,7 @@ usage = """
 
   Usage: #{'ducke'.cyan} command parameters
 
-  Commands:
+  Common:
   
     ps        List all running containers
     logs      Attach to container logs
@@ -17,7 +17,7 @@ usage = """
     up        Start a new container
     exec      Run a command inside an existing container
   
-  Docker management:
+  Management:
   
     build     Build an image from a Dockerfile
     rebuild   Build an image from a Dockerfile from scratch

@@ -11,6 +11,7 @@ example =
 module.exports = (images) ->
   root = {}
   byid = {}
+  bytag = {}
   
   for image in images
     node =
@@ -19,6 +20,9 @@ module.exports = (images) ->
     
     byid[image.Id] = node
     root[image.Id] = node if image.ParentId is ''
+    for tag in image.RepoTags
+      continue if tag is '<none>:<none>'
+      bytag[tag] = node
   
   for _, node of byid
     if node.image.ParentId isnt ''
@@ -27,6 +31,9 @@ module.exports = (images) ->
   result =
     images: []
     graph: []
+    tags: bytag
+    ids: byid
+  
   for _, value of byid
     result.images.push value
   for _, value of root
