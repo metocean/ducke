@@ -62,11 +62,11 @@ module.exports = Ducke = (function() {
   Ducke.prototype.ps = function(callback) {
     return this._modem.get('/containers/json?all=1').result((function(_this) {
       return function(err, containers) {
-        var container, errors, results, tasks, _fn, _i, _len;
+        var container, errors, statuses, tasks, _fn, _i, _len;
         if (err != null) {
           return callback(err);
         }
-        results = [];
+        statuses = [];
         errors = [];
         tasks = [];
         _fn = function(container) {
@@ -76,7 +76,7 @@ module.exports = Ducke = (function() {
                 errors.push(err);
                 return cb();
               }
-              results.push({
+              statuses.push({
                 container: container,
                 inspect: inspect
               });
@@ -89,7 +89,7 @@ module.exports = Ducke = (function() {
           _fn(container);
         }
         return parallel(tasks, function() {
-          results.sort(function(a, b) {
+          statuses.sort(function(a, b) {
             a = a.container.Names[0];
             b = b.container.Names[0];
             if (a > b) {
@@ -101,9 +101,9 @@ module.exports = Ducke = (function() {
             return 0;
           });
           if (errors.length > 0) {
-            return callback(errors, results);
+            return callback(errors, statuses);
           }
-          return callback(null, results);
+          return callback(null, statuses);
         });
       };
     })(this));

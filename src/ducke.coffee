@@ -31,7 +31,7 @@ module.exports = class Ducke
       .get '/containers/json?all=1'
       .result (err, containers) =>
         return callback err if err?
-        results = []
+        statuses = []
         errors = []
         tasks = []
         for container in containers
@@ -43,21 +43,21 @@ module.exports = class Ducke
                   if err?
                     errors.push err
                     return cb()
-                  results.push
+                  statuses.push
                     container: container
                     inspect: inspect
                   cb()
         parallel tasks, =>
           
-          results.sort (a, b) ->
+          statuses.sort (a, b) ->
             a = a.container.Names[0]
             b = b.container.Names[0]
             return 1 if a > b
             return -1 if a < b
             0
           
-          return callback errors, results if errors.length > 0
-          callback null, results
+          return callback errors, statuses if errors.length > 0
+          callback null, statuses
   
   ls: (callback)  =>
     @_modem

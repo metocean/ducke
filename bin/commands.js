@@ -62,28 +62,28 @@ module.exports = {
     });
   },
   ps: function(ducke) {
-    return ducke.ps(function(err, results) {
-      var image, name, result, status, _i, _len;
+    return ducke.ps(function(err, statuses) {
+      var image, name, output, status, _i, _len;
       if (err != null) {
         console.error(err);
         process.exit(1);
       }
-      if (results.length === 0) {
+      if (statuses.length === 0) {
         console.error();
         console.error('  There are no docker containers on this system'.magenta);
         console.error();
         return;
       }
       console.log();
-      for (_i = 0, _len = results.length; _i < _len; _i++) {
-        result = results[_i];
-        status = result.inspect.State.Running ? result.inspect.NetworkSettings.IPAddress.toString().blue : 'stopped'.red;
-        while (status.length < 26) {
-          status += ' ';
+      for (_i = 0, _len = statuses.length; _i < _len; _i++) {
+        status = statuses[_i];
+        output = status.inspect.State.Running ? status.inspect.NetworkSettings.IPAddress.toString().blue : 'stopped'.red;
+        while (output.length < 26) {
+          output += ' ';
         }
-        name = result.container.Names[0].slice(1);
-        image = result.inspect.Config.Image;
-        console.log("  " + status + " " + name + " (" + image + ")");
+        name = status.container.Names[0].slice(1);
+        image = status.inspect.Config.Image;
+        console.log("  " + output + " " + name + " (" + image + ")");
       }
       return console.log();
     });

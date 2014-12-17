@@ -36,29 +36,29 @@ module.exports =
           process.exit 1
   
   ps: (ducke) ->
-    ducke.ps (err, results) ->
+    ducke.ps (err, statuses) ->
       if err?
         console.error err
         process.exit 1
       
-      if results.length is 0
+      if statuses.length is 0
         console.error()
         console.error '  There are no docker containers on this system'.magenta
         console.error()
         return
       
       console.log()
-      for result in results
-        status = if result.inspect.State.Running
-          result.inspect.NetworkSettings.IPAddress.toString().blue
+      for status in statuses
+        output = if status.inspect.State.Running
+          status.inspect.NetworkSettings.IPAddress.toString().blue
         else
           'stopped'.red
-        status += ' ' while status.length < 26
+        output += ' ' while output.length < 26
         
-        name = result.container.Names[0][1..]
-        image = result.inspect.Config.Image
+        name = status.container.Names[0][1..]
+        image = status.inspect.Config.Image
         
-        console.log "  #{status} #{name} (#{image})"
+        console.log "  #{output} #{name} (#{image})"
       console.log()
   
   inspect: (ducke, containers) ->
