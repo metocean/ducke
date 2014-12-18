@@ -130,8 +130,14 @@ module.exports = {
           while (output.length < 26) {
             output += ' ';
           }
-          console.log("  " + output + " " + 'deleted'.red);
-          return cb();
+          return this.ducke.container(status.container.Id).rm(function(err) {
+            if (err != null) {
+              console.error(err);
+              return cb();
+            }
+            console.log("  " + output + " " + 'deleted'.red);
+            return cb();
+          });
         });
       };
       for (_i = 0, _len = statuses.length; _i < _len; _i++) {

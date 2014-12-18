@@ -95,9 +95,15 @@ module.exports =
             image = status.inspect.Config.Image
             output = "  #{name} (#{image})"
             output += ' ' while output.length < 26
-            
-            console.log "  #{output} #{'deleted'.red}"
-            cb()
+            @ducke
+              .container status.container.Id
+              .rm (err) ->
+                if err?
+                  console.error err
+                  return cb()
+                
+                console.log "  #{output} #{'deleted'.red}"
+                cb()
         
       series tasks, ->
         console.log()
