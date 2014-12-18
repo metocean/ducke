@@ -88,6 +88,61 @@ module.exports = {
       return console.log();
     });
   },
+  purge: function(ducke) {
+    return ducke.ps(function(err, statuses) {
+      var status, tasks, _fn, _i, _len;
+      if (err != null) {
+        console.error(err);
+        process.exit(1);
+      }
+      if (statuses.length === 0) {
+        console.error();
+        console.error('  There are no docker containers on this system'.magenta);
+        console.error();
+        return;
+      }
+      console.log();
+      statuses = statuses.filter(function(status) {
+        var finishedAt, now, oneweek;
+        if (status.inspect.State.Running) {
+          return false;
+        }
+        finishedAt = new Date(status.inspect.State.FinishedAt);
+        now = new Date();
+        oneweek = 7 * 24 * 60 * 60 * 1000;
+        if (now - finishedAt < oneweek) {
+          return false;
+        }
+        return true;
+      });
+      if (statuses.length === 0) {
+        console.log('  No containers older than one week'.magenta);
+        console.log();
+        return;
+      }
+      tasks = [];
+      _fn = function(status) {
+        return tasks.push(function(cb) {
+          var image, name, output;
+          name = status.container.Names[0].slice(1);
+          image = status.inspect.Config.Image;
+          output = "  " + name + " (" + image + ")";
+          while (output.length < 26) {
+            output += ' ';
+          }
+          console.log("  " + output + " " + 'deleted'.red);
+          return cb();
+        });
+      };
+      for (_i = 0, _len = statuses.length; _i < _len; _i++) {
+        status = statuses[_i];
+        _fn(status);
+      }
+      return series(tasks, function() {
+        return console.log();
+      });
+    });
+  },
   inspect: function(ducke, containers) {
     var id, results, tasks, _fn, _i, _len;
     tasks = [];

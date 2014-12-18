@@ -9,7 +9,7 @@ commands = require('./commands');
 
 parameters = require('../src/parameters');
 
-usage = "👾\n\n  Usage: " + 'ducke'.cyan + " command parameters\n\n  Common:\n  \n    ps        List all running containers\n    logs      Attach to container logs\n    run       Start a new container interactively\n    up        Start a new container\n    exec      Run a command inside an existing container\n  \n  Management:\n  \n    build     Build an image from a Dockerfile\n    rebuild   Build an image from a Dockerfile from scratch\n    inspect   Show details about containers\n    kill      Send SIGTERM to running containers\n    stop      Stop containers\n    rm        Delete containers\n    ls        List available images\n    orphans   List all orphaned images\n    rmi       Delete images\n";
+usage = "👾\n\n  Usage: " + 'ducke'.cyan + " command parameters\n\n  Common:\n  \n    ps        List all running containers\n    logs      Attach to container logs\n    run       Start a new container interactively\n    up        Start a new container\n    exec      Run a command inside an existing container\n  \n  Management:\n  \n    build     Build an image from a Dockerfile\n    rebuild   Build an image from a Dockerfile from scratch\n    inspect   Show details about containers\n    kill      Send SIGTERM to running containers\n    stop      Stop containers\n    purge     Remove week old stopped containers\n    rm        Delete containers\n    ls        List available images\n    orphans   List all orphaned images\n    rmi       Delete images\n";
 
 usage_error = (function(_this) {
   return function(message) {
@@ -55,6 +55,9 @@ cmds = {
     }
     return usage_error('ducke run requires an image name');
   },
+  start: function() {
+    return cmds.up();
+  },
   up: function() {
     if (args.length > 0) {
       return commands.up(ducke, args[0], args.slice(1));
@@ -79,11 +82,17 @@ cmds = {
     }
     return usage_error('ducke build requires an image name');
   },
+  down: function() {
+    return cmds.stop();
+  },
   stop: function() {
     if (args.length !== 0) {
       return commands.stop(ducke, args);
     }
     return usage_error('ducke stop requires container names');
+  },
+  "delete": function() {
+    return cmds.rm();
   },
   rm: function() {
     if (args.length !== 0) {
@@ -91,17 +100,26 @@ cmds = {
     }
     return usage_error('ducke rm requires container names');
   },
+  die: function() {
+    return cmds.kill();
+  },
   kill: function() {
     if (args.length !== 0) {
       return commands.kill(ducke, args);
     }
     return usage_error('ducke kill requires container names');
   },
+  images: function() {
+    return cmds.ls();
+  },
   ls: function() {
     if (args.length === 0) {
       return commands.ls(ducke);
     }
     return usage_error('ducke ls requires no arguments');
+  },
+  orphan: function() {
+    return cmds.orphans();
   },
   orphans: function() {
     if (args.length === 0) {
@@ -114,6 +132,12 @@ cmds = {
       return commands.rmi(ducke, args);
     }
     return usage_error('ducke rmi requires image names');
+  },
+  purge: function() {
+    if (args.length === 0) {
+      return commands.purge(ducke);
+    }
+    return usage_error('ducke purge requires no arguments');
   }
 };
 

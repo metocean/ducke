@@ -24,6 +24,7 @@ usage = """
     inspect   Show details about containers
     kill      Send SIGTERM to running containers
     stop      Stop containers
+    purge     Remove week old stopped containers
     rm        Delete containers
     ls        List available images
     orphans   List all orphaned images
@@ -62,6 +63,7 @@ cmds =
     return commands.run ducke, args[0], args[1..] if args.length > 0
     usage_error 'ducke run requires an image name'
   
+  start: -> cmds.up()
   up: ->
     return commands.up ducke, args[0], args[1..] if args.length > 0
     usage_error 'ducke up requires an image name and command'
@@ -78,22 +80,27 @@ cmds =
     return commands.rebuild ducke, args[0] if args.length is 1
     usage_error 'ducke build requires an image name'
   
+  down: -> cmds.stop()
   stop: ->
     return commands.stop ducke, args if args.length isnt 0
     usage_error 'ducke stop requires container names'
   
+  delete: -> cmds.rm()
   rm: ->
     return commands.rm ducke, args if args.length isnt 0
     usage_error 'ducke rm requires container names'
   
+  die: -> cmds.kill()
   kill: ->
     return commands.kill ducke, args if args.length isnt 0
     usage_error 'ducke kill requires container names'
   
+  images: -> cmds.ls()
   ls: ->
     return commands.ls ducke if args.length is 0
     usage_error 'ducke ls requires no arguments'
   
+  orphan: -> cmds.orphans()
   orphans: ->
     return commands.orphans ducke if args.length is 0
     usage_error 'ducke orphans requires no arguments'
@@ -101,6 +108,10 @@ cmds =
   rmi: ->
     return commands.rmi ducke, args if args.length isnt 0
     usage_error 'ducke rmi requires image names'
+  
+  purge: ->
+    return commands.purge ducke if args.length is 0
+    usage_error 'ducke purge requires no arguments'
 
 command = args[0]
 args.shift()
