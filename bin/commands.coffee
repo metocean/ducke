@@ -95,7 +95,7 @@ module.exports =
             image = status.inspect.Config.Image
             output = "  #{name} (#{image})"
             output += ' ' while output.length < 26
-            @ducke
+            ducke
               .container status.container.Id
               .rm (err) ->
                 if err?

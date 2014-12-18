@@ -130,7 +130,7 @@ module.exports = {
           while (output.length < 26) {
             output += ' ';
           }
-          return this.ducke.container(status.container.Id).rm(function(err) {
+          return ducke.container(status.container.Id).rm(function(err) {
             if (err != null) {
               console.error(err);
               return cb();
