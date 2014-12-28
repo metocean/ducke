@@ -197,6 +197,11 @@ module.exports = class Ducke
           return callback err if err?
           callback null, id
     
+    inspect: (callback) =>
+      @_modem
+        .get "/images/#{id}/json"
+        .result callback
+    
     rm: (callback) =>
       @_modem
         .delete "/images/#{id}"

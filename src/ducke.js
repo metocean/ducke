@@ -296,6 +296,11 @@ module.exports = Ducke = (function() {
           });
         };
       })(this),
+      inspect: (function(_this) {
+        return function(callback) {
+          return _this._modem.get("/images/" + id + "/json").result(callback);
+        };
+      })(this),
       rm: (function(_this) {
         return function(callback) {
           return _this._modem["delete"]("/images/" + id).result(callback);
