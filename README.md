@@ -30,6 +30,40 @@ To use as an API
 npm install ducke
 ```
 
+## Usage
+
+```
+Usage: ducke command [parameters]
+
+Common:
+
+    ps        List all running containers
+    logs      Attach to container logs
+    run       Start a new container interactively
+    up        Start a new container
+    exec      Run a command inside an existing container
+
+Containers:
+
+    inspect   Show details about containers
+    kill      Send SIGTERM to running containers
+    stop      Stop containers
+    purge     Remove week old stopped containers
+    rm        Delete containers
+
+Images:
+
+    ls        List available images
+    orphans   List all orphaned images
+    rmi       Delete images
+    inspecti  Show details about images
+
+Building:
+
+    build     Build an image from a Dockerfile
+    rebuild   Build an image from a Dockerfile from scratch
+```
+
 ## Examples
 
 ```js
