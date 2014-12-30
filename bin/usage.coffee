@@ -2,7 +2,7 @@ require 'colors'
 
 Ducke = require '../src/ducke'
 commands = require './commands'
-parameters = require '../src/parameters'
+parameters = require('ducke-modem').Parameters
 
 usage = """
 👾

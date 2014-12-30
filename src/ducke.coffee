@@ -1,4 +1,4 @@
-Modem = require('ducke-modem').Modem
+Modem = require('ducke-modem').API
 tardir = require './tardir'
 groupimages = require './groupimages'
 stream = require 'stream'
@@ -95,11 +95,13 @@ module.exports = class Ducke
       @_modem
         .get "/containers/#{id}/json"
         .result callback
+      @container id
     
     logs: (callback) =>
       @_modem
         .get "/containers/#{id}/logs?stderr=1&stdout=1&follow=1&tail=10"
         .stream callback
+      @container id
     
     resize: (rows, columns, callback) =>
       @_modem
@@ -107,36 +109,43 @@ module.exports = class Ducke
         .result (err, result) =>
           return callback err if err?
           callback null, result is 'OK'
+      @container id
     
     start: (callback) =>
       @_modem
         .post "/containers/#{id}/start", {}
         .result callback
+      @container id
     
     stop: (callback) =>
       @_modem
         .post "/containers/#{id}/stop?t=5", {}
         .result callback
+      @container id
     
     wait: (callback) =>
       @_modem
         .post "/containers/#{id}/wait", {}
         .result callback
+      @container id
     
     rm: (callback) =>
       @_modem
         .delete "/containers/#{id}"
         .result callback
+      @container id
     
     attach: (callback) =>
       @_modem
         .post "/containers/#{id}/attach?stream=true&stdin=true&stdout=true&stderr=true", {}
         .connect callback
+      @container id
     
     kill: (callback) =>
       @_modem
         .post "/containers/#{id}/kill?signal=SIGTERM", {}
         .result callback
+      @container id
     
     exec: (cmd, stdin, stdout, stderr, callback) =>
       params =
@@ -168,6 +177,7 @@ module.exports = class Ducke
                 stdin.setRawMode wasRaw
                 stdin.resume()
                 callback null, 0
+      @container id
   
   build_image: (id, path, usecache, run, callback) =>
     tardir path, (err, archive) =>
@@ -195,9 +205,11 @@ module.exports = class Ducke
   image: (id) =>
     rebuild: (path, run, callback) =>
       @build_image id, path, no, run, callback
+      @image id
     
     build: (path, run, callback) =>
       @build_image id, path, yes, run, callback
+      @image id
     
     up: (name, cmd, callback) =>
       params =
@@ -213,16 +225,19 @@ module.exports = class Ducke
         container.start (err) =>
           return callback err if err?
           callback null, id
+      @image id
     
     inspect: (callback) =>
       @_modem
         .get "/images/#{id}/json"
         .result callback
+      @image id
     
     rm: (callback) =>
       @_modem
         .delete "/images/#{id}"
         .result callback
+      @image id
     
     run: (cmd, stdin, stdout, stderr, run, callback)  =>
       params =
@@ -275,4 +290,5 @@ module.exports = class Ducke
               container.rm (err) ->
                 return callback err if err?
                 callback null, result.StatusCode
+      @image id
       

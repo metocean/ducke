@@ -2,7 +2,7 @@
 var Ducke, Modem, groupimages, parallel, stream, tardir,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-Modem = require('ducke-modem').Modem;
+Modem = require('ducke-modem').API;
 
 tardir = require('./tardir');
 
@@ -163,52 +163,61 @@ module.exports = Ducke = (function() {
     return {
       inspect: (function(_this) {
         return function(callback) {
-          return _this._modem.get("/containers/" + id + "/json").result(callback);
+          _this._modem.get("/containers/" + id + "/json").result(callback);
+          return _this.container(id);
         };
       })(this),
       logs: (function(_this) {
         return function(callback) {
-          return _this._modem.get("/containers/" + id + "/logs?stderr=1&stdout=1&follow=1&tail=10").stream(callback);
+          _this._modem.get("/containers/" + id + "/logs?stderr=1&stdout=1&follow=1&tail=10").stream(callback);
+          return _this.container(id);
         };
       })(this),
       resize: (function(_this) {
         return function(rows, columns, callback) {
-          return _this._modem.get("/containers/" + id + "/resize?h=" + rows + "&w=" + columns).result(function(err, result) {
+          _this._modem.get("/containers/" + id + "/resize?h=" + rows + "&w=" + columns).result(function(err, result) {
             if (err != null) {
               return callback(err);
             }
             return callback(null, result === 'OK');
           });
+          return _this.container(id);
         };
       })(this),
       start: (function(_this) {
         return function(callback) {
-          return _this._modem.post("/containers/" + id + "/start", {}).result(callback);
+          _this._modem.post("/containers/" + id + "/start", {}).result(callback);
+          return _this.container(id);
         };
       })(this),
       stop: (function(_this) {
         return function(callback) {
-          return _this._modem.post("/containers/" + id + "/stop?t=5", {}).result(callback);
+          _this._modem.post("/containers/" + id + "/stop?t=5", {}).result(callback);
+          return _this.container(id);
         };
       })(this),
       wait: (function(_this) {
         return function(callback) {
-          return _this._modem.post("/containers/" + id + "/wait", {}).result(callback);
+          _this._modem.post("/containers/" + id + "/wait", {}).result(callback);
+          return _this.container(id);
         };
       })(this),
       rm: (function(_this) {
         return function(callback) {
-          return _this._modem["delete"]("/containers/" + id).result(callback);
+          _this._modem["delete"]("/containers/" + id).result(callback);
+          return _this.container(id);
         };
       })(this),
       attach: (function(_this) {
         return function(callback) {
-          return _this._modem.post("/containers/" + id + "/attach?stream=true&stdin=true&stdout=true&stderr=true", {}).connect(callback);
+          _this._modem.post("/containers/" + id + "/attach?stream=true&stdin=true&stdout=true&stderr=true", {}).connect(callback);
+          return _this.container(id);
         };
       })(this),
       kill: (function(_this) {
         return function(callback) {
-          return _this._modem.post("/containers/" + id + "/kill?signal=SIGTERM", {}).result(callback);
+          _this._modem.post("/containers/" + id + "/kill?signal=SIGTERM", {}).result(callback);
+          return _this.container(id);
         };
       })(this),
       exec: (function(_this) {
@@ -221,7 +230,7 @@ module.exports = Ducke = (function() {
             Tty: true,
             Cmd: cmd
           };
-          return _this._modem.post("/containers/" + id + "/exec", params).result(function(err, exec) {
+          _this._modem.post("/containers/" + id + "/exec", params).result(function(err, exec) {
             if (err != null) {
               return callback(err);
             }
@@ -247,6 +256,7 @@ module.exports = Ducke = (function() {
               });
             });
           });
+          return _this.container(id);
         };
       })(this)
     };
@@ -294,12 +304,14 @@ module.exports = Ducke = (function() {
     return {
       rebuild: (function(_this) {
         return function(path, run, callback) {
-          return _this.build_image(id, path, false, run, callback);
+          _this.build_image(id, path, false, run, callback);
+          return _this.image(id);
         };
       })(this),
       build: (function(_this) {
         return function(path, run, callback) {
-          return _this.build_image(id, path, true, run, callback);
+          _this.build_image(id, path, true, run, callback);
+          return _this.image(id);
         };
       })(this),
       up: (function(_this) {
@@ -311,7 +323,7 @@ module.exports = Ducke = (function() {
           if (cmd.length > 0) {
             params.Cmd = cmd;
           }
-          return _this.createContainer(name, params, function(err, container) {
+          _this.createContainer(name, params, function(err, container) {
             if (err != null) {
               return callback(err);
             }
@@ -324,16 +336,19 @@ module.exports = Ducke = (function() {
               return callback(null, id);
             });
           });
+          return _this.image(id);
         };
       })(this),
       inspect: (function(_this) {
         return function(callback) {
-          return _this._modem.get("/images/" + id + "/json").result(callback);
+          _this._modem.get("/images/" + id + "/json").result(callback);
+          return _this.image(id);
         };
       })(this),
       rm: (function(_this) {
         return function(callback) {
-          return _this._modem["delete"]("/images/" + id).result(callback);
+          _this._modem["delete"]("/images/" + id).result(callback);
+          return _this.image(id);
         };
       })(this),
       run: (function(_this) {
@@ -349,7 +364,7 @@ module.exports = Ducke = (function() {
             Cmd: cmd,
             Image: id
           };
-          return _this.createContainer(null, params, function(err, container) {
+          _this.createContainer(null, params, function(err, container) {
             if (err != null) {
               return run(err);
             }
@@ -405,6 +420,7 @@ module.exports = Ducke = (function() {
               });
             });
           });
+          return _this.image(id);
         };
       })(this)
     };
