@@ -1,5 +1,4 @@
-Modem = require './modem'
-demux = require './demuxstream'
+Modem = require('ducke-modem').Modem
 tardir = require './tardir'
 groupimages = require './groupimages'
 stream = require 'stream'
@@ -48,7 +47,6 @@ module.exports = class Ducke
                     inspect: inspect
                   cb()
         parallel tasks, =>
-          
           statuses.sort (a, b) ->
             a = a.container.Names[0]
             b = b.container.Names[0]
@@ -65,6 +63,25 @@ module.exports = class Ducke
       .result (err, images) =>
         return callback err if err?
         callback null, groupimages images
+  
+  lls: (images, callback)  =>
+    errors = []
+    results = {}
+    tasks = []
+    for id in images
+      do (id) =>
+        tasks.push (cb) =>
+          @image id
+            .inspect (err, result) ->
+              if err?
+                errors.push err
+                return cb()
+              results[result.Id] = result
+              cb()
+    parallel tasks, ->
+      if errors.length > 0
+        return callback errors, results
+      callback null, results
   
   createContainer: (name, params, callback) =>
     url = '/containers/create'

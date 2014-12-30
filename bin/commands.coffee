@@ -1,3 +1,5 @@
+modem = require 'ducke-modem'
+
 require 'colors'
 
 series = (tasks, callback) ->
@@ -153,6 +155,7 @@ module.exports =
             console.error err
             process.exit 1
           stream.pipe process.stdout
+          #modem.DemuxStream stream, process.stdout, process.stderr
   
   run: (ducke, image, cmd) ->
     run = (err, id) ->
