@@ -152,6 +152,7 @@ ducke
     .run(['/bin/bash'], process.stdin, process.stdout, process.stderr, function(err, code) {})
 ```
 
-Todo:
+## Todo
+
 - More of the docker API
 - Tests
