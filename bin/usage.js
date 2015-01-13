@@ -9,7 +9,7 @@ commands = require('./commands');
 
 parameters = require('ducke-modem').Parameters;
 
-usage = "👾\n\n  Usage: " + 'ducke'.cyan + " command parameters\n\n  Common:\n  \n    ps        List all running containers\n    logs      Attach to container logs\n    run       Start a new container interactively\n    up        Start a new container\n    exec      Run a command inside an existing container\n  \n  Containers:\n  \n    inspect   Show details about containers\n    kill      Send SIGTERM to running containers\n    stop      Stop containers\n    purge     Remove week old stopped containers\n    rm        Delete containers\n  \n  Images:\n  \n    ls        List available images\n    orphans   List all orphaned images\n    rmi       Delete images\n    inspecti  Show details about images\n  \n  Building:\n  \n    build     Build an image from a Dockerfile\n    rebuild   Build an image from a Dockerfile from scratch\n";
+usage = "👾\n\n  Usage: " + 'ducke'.cyan + " command parameters\n\n  Common:\n  \n    ps        List all running containers\n    logs      Attach to container logs\n    run       Start a new container interactively\n    up        Start a new container\n    exec      Run a command inside an existing container\n  \n  Containers:\n  \n    inspect   Show details about containers\n    kill      Send SIGTERM to running containers\n    stop      Stop containers\n    purge     Remove week old stopped containers\n    cull      Stop and delete containers\n    rm        Delete containers\n  \n  Images:\n  \n    ls        List available images\n    orphans   List all orphaned images\n    rmi       Delete images\n    inspecti  Show details about images\n  \n  Building:\n  \n    build     Build an image from a Dockerfile\n    rebuild   Build an image from a Dockerfile from scratch\n";
 
 usage_error = (function(_this) {
   return function(message) {
@@ -99,6 +99,12 @@ cmds = {
       return commands.rm(ducke, args);
     }
     return usage_error('ducke rm requires container names');
+  },
+  cull: function() {
+    if (args.length !== 0) {
+      return commands.cull(ducke, args);
+    }
+    return usage_error('ducke cull requires container names');
   },
   die: function() {
     return cmds.kill();

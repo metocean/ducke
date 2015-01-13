@@ -23,6 +23,7 @@ usage = """
     kill      Send SIGTERM to running containers
     stop      Stop containers
     purge     Remove week old stopped containers
+    cull      Stop and delete containers
     rm        Delete containers
   
   Images:
@@ -96,6 +97,10 @@ cmds =
   rm: ->
     return commands.rm ducke, args if args.length isnt 0
     usage_error 'ducke rm requires container names'
+  
+  cull: ->
+    return commands.cull ducke, args if args.length isnt 0
+    usage_error 'ducke cull requires container names'
   
   die: -> cmds.kill()
   kill: ->

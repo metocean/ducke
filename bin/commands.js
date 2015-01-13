@@ -376,6 +376,60 @@ module.exports = {
       return console.log();
     });
   },
+  cull: function(ducke, containers) {
+    var id, tasks, _fn, _i, _len;
+    tasks = [];
+    console.log();
+    _fn = function(id) {
+      tasks.push(function(cb) {
+        return ducke.container(id).stop(function(err) {
+          if (err != null) {
+            if (err.statusCode === 404) {
+              return cb();
+            }
+            if (err.statusCode === 304) {
+              return cb();
+            }
+            if (err.statusCode === 500) {
+              console.error("  could not stop " + id.red);
+              return cb();
+            }
+            console.error(err);
+            console.error(JSON.stringify(err));
+            process.exit(1);
+          }
+          console.log("  " + 'stopped'.green + " " + id);
+          return cb();
+        });
+      });
+      return tasks.push(function(cb) {
+        return ducke.container(id).rm(function(err) {
+          if (err != null) {
+            if (err.statusCode === 404) {
+              console.error("  " + id.red + " is an unknown container");
+              return cb();
+            }
+            if (err.statusCode === 500) {
+              console.error("  could not delete " + id.red);
+              return cb();
+            }
+            console.error(err);
+            console.error(JSON.stringify(err));
+            process.exit(1);
+          }
+          console.log("  " + 'deleted'.green + " " + id);
+          return cb();
+        });
+      });
+    };
+    for (_i = 0, _len = containers.length; _i < _len; _i++) {
+      id = containers[_i];
+      _fn(id);
+    }
+    return series(tasks, function() {
+      return console.log();
+    });
+  },
   kill: function(ducke, containers) {
     var id, tasks, _fn, _i, _len;
     tasks = [];
