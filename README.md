@@ -66,6 +66,65 @@ Building:
 
 ## Examples
 
+Command
+
+```sh
+$  ~  ducke ls
+
+  04c5d3b7b065 ubuntu:latest
+  cf39b476aeec phusion/baseimage:0.9.15
+    ...
+  0e819813bc00 tutum/apache-php:latest
+    ...
+  5327fda0d529 phusion/passenger-full:0.9.11
+  
+```
+
+```sh
+$ ~  ducke ps
+
+  stopped          happy_goldstine (234bce554bdcec9d4ad47a452bd37a95d291d825138421730aa06017da9c8412)
+  stopped          loadbalancer-osx_daemon_1 (metocean/doppelganger:1.0.3)
+  stopped          sleepy_turing (cf39b476aeec4d2bd097945a14a147dc52e16bd88511ed931357a5cd6f6590de)
+  
+```
+
+```sh
+$ ~  ducke run ubuntu
+
+  running cranky_kowalevski (ubuntu)
+
+root@09d3215f6677:/# ls
+bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
+boot  etc  lib   media  opt  root  sbin  sys  usr
+root@09d3215f6677:/#
+
+///
+
+$  ~  ducke exec cranky_kowalevski
+
+  exec cranky_kowalevski (ubuntu)
+
+root@10a2833bdafa:/# ps aux
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root         1  0.4  0.3  18168  3164 ?        Ss+  04:19   0:00 bash
+root        16  1.0  0.3  18172  3168 ?        S    04:19   0:00 bash
+root        31  0.0  0.2  15572  2100 ?        R+   04:19   0:00 ps aux
+root@10a2833bdafa:/#
+
+```
+
+```sh
+$ ~  ducke cull happy_goldstine sleepy_turing
+
+  deleted happy_goldstine
+  deleted sleepy_turing
+
+$  ~
+```
+
+API
+
 ```js
 var Ducke = require('ducke');
 var ducke = new Ducke.API(Ducke.Parameters());
