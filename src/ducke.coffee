@@ -105,7 +105,7 @@ module.exports = class Ducke
     
     resize: (rows, columns, callback) =>
       @_modem
-        .get "/containers/#{id}/resize?h=#{rows}&w=#{columns}"
+        .post "/containers/#{id}/resize?h=#{rows}&w=#{columns}"
         .result (err, result) =>
           return callback err if err?
           callback null, result is 'OK'
@@ -172,10 +172,19 @@ module.exports = class Ducke
               stdin.setRawMode yes
               stdin.pipe stream
               
+              updatesize = =>
+                @_modem
+                  .post "/exec/#{exec.Id}/resize?h=#{stdout.rows}&w=#{stdout.columns}", {}
+                  .result (err, r) ->
+                    console.error err if err?
+              stdout.on 'resize', updatesize
+              updatesize() if stdout.rows?
+              
               stream.on 'end', ->
                 stdin.removeAllListeners()
                 stdin.setRawMode wasRaw
                 stdin.resume()
+                stdout.removeListener 'resize', updatesize
                 callback null, 0
       @container id
   
@@ -267,6 +276,11 @@ module.exports = class Ducke
           stdin.setRawMode yes
           stdin.pipe stream
           
+          updatesize = ->
+            container.resize stdout.rows, stdout.columns, ->
+          stdout.on 'resize', updatesize
+          updatesize() if stdout.rows?
+          
           container.start (err) =>
             return callback err if err?
             
@@ -274,6 +288,7 @@ module.exports = class Ducke
               stream.unpipe stdout
               stdin.unpipe stream
               stream.end()
+              stdout.removeListener 'resize', updatesize
               # This will kick off the wait (eventually)
               container.kill ->
             

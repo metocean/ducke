@@ -175,7 +175,7 @@ module.exports = Ducke = (function() {
       })(this),
       resize: (function(_this) {
         return function(rows, columns, callback) {
-          _this._modem.get("/containers/" + id + "/resize?h=" + rows + "&w=" + columns).result(function(err, result) {
+          _this._modem.post("/containers/" + id + "/resize?h=" + rows + "&w=" + columns).result(function(err, result) {
             if (err != null) {
               return callback(err);
             }
@@ -238,7 +238,7 @@ module.exports = Ducke = (function() {
               Detach: false,
               Tty: true
             }).connect(function(err, stream) {
-              var wasRaw;
+              var updatesize, wasRaw;
               if (err != null) {
                 return callback(err);
               }
@@ -248,10 +248,22 @@ module.exports = Ducke = (function() {
               stdin.setEncoding('utf8');
               stdin.setRawMode(true);
               stdin.pipe(stream);
+              updatesize = function() {
+                return _this._modem.post("/exec/" + exec.Id + "/resize?h=" + stdout.rows + "&w=" + stdout.columns, {}).result(function(err, r) {
+                  if (err != null) {
+                    return console.error(err);
+                  }
+                });
+              };
+              stdout.on('resize', updatesize);
+              if (stdout.rows != null) {
+                updatesize();
+              }
               return stream.on('end', function() {
                 stdin.removeAllListeners();
                 stdin.setRawMode(wasRaw);
                 stdin.resume();
+                stdout.removeListener('resize', updatesize);
                 return callback(null, 0);
               });
             });
@@ -371,7 +383,7 @@ module.exports = Ducke = (function() {
             id = container.Id;
             container = _this.container(container.Id);
             return container.attach(function(err, stream) {
-              var wasRaw;
+              var updatesize, wasRaw;
               if (err != null) {
                 return run(err);
               }
@@ -382,6 +394,13 @@ module.exports = Ducke = (function() {
               stdin.setEncoding('utf8');
               stdin.setRawMode(true);
               stdin.pipe(stream);
+              updatesize = function() {
+                return container.resize(stdout.rows, stdout.columns, function() {});
+              };
+              stdout.on('resize', updatesize);
+              if (stdout.rows != null) {
+                updatesize();
+              }
               return container.start(function(err) {
                 var kill;
                 if (err != null) {
@@ -391,6 +410,7 @@ module.exports = Ducke = (function() {
                   stream.unpipe(stdout);
                   stdin.unpipe(stream);
                   stream.end();
+                  stdout.removeListener('resize', updatesize);
                   return container.kill(function() {});
                 };
                 process.on('SIGTERM', function() {
