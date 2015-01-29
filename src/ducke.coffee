@@ -2,6 +2,7 @@ Modem = require('ducke-modem').API
 tardir = require './tardir'
 groupimages = require './groupimages'
 stream = require 'stream'
+fs = require 'fs'
 
 parallel = (tasks, callback) ->
   count = tasks.length
@@ -189,6 +190,8 @@ module.exports = class Ducke
       @container id
   
   build_image: (id, path, usecache, run, callback) =>
+    if !fs.existsSync "#{path}/Dockerfile"
+      return callback new Error 'No Dockerfile found'
     tardir path, (err, archive) =>
       return callback err if err?
       archive.on 'error', callback
