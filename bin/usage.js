@@ -5,8 +5,6 @@ require('colors');
 
 Ducke = require('../src/ducke');
 
-commands = require('./commands');
-
 parameters = require('ducke-modem').Parameters;
 
 usage = "👾\n\n  Usage: " + 'ducke'.cyan + " command parameters\n\n  Common:\n  \n    ps        List all running containers\n    logs      Attach to container logs\n    run       Start a new container interactively\n    up        Start a new container\n    exec      Run a command inside an existing container\n  \n  Containers:\n  \n    inspect   Show details about containers\n    kill      Send SIGTERM to running containers\n    stop      Stop containers\n    purge     Remove week old stopped containers\n    cull      Stop and delete containers\n    rm        Delete containers\n  \n  Images:\n  \n    ls        List available images\n    orphans   List all orphaned images\n    rmi       Delete images\n    inspecti  Show details about images\n  \n  Building:\n  \n    build     Build an image from a Dockerfile\n    rebuild   Build an image from a Dockerfile from scratch\n";
@@ -24,6 +22,27 @@ usage_error = (function(_this) {
 args = process.argv.slice(2);
 
 ducke = new Ducke(parameters(args));
+
+commands = {
+  status: require('./status'),
+  ps: require('./ps'),
+  logs: require('./logs'),
+  run: require('./run'),
+  up: require('./up'),
+  exec: require('./exec'),
+  inspect: require('./inspect'),
+  kill: require('./kill'),
+  stop: require('./stop'),
+  purge: require('./purge'),
+  cull: require('./cull'),
+  rm: require('./rm'),
+  ls: require('./ls'),
+  orphans: require('./orphans'),
+  rmi: require('./rmi'),
+  inspecti: require('./inspecti'),
+  build: require('./build'),
+  rebuild: require('./rebuild')
+};
 
 if (args.length === 0) {
   console.error(usage);

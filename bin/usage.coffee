@@ -1,7 +1,6 @@
 require 'colors'
 
 Ducke = require '../src/ducke'
-commands = require './commands'
 parameters = require('ducke-modem').Parameters
 
 usage = """
@@ -49,6 +48,31 @@ usage_error = (message) =>
 
 args = process.argv[2..]
 ducke = new Ducke parameters args
+
+
+commands =
+  status: require './status'
+  
+  ps: require './ps'
+  logs: require './logs'
+  run: require './run'
+  up: require './up'
+  exec: require './exec'
+  
+  inspect: require './inspect'
+  kill: require './kill'
+  stop: require './stop'
+  purge: require './purge'
+  cull: require './cull'
+  rm: require './rm'
+  
+  ls: require './ls'
+  orphans: require './orphans'
+  rmi: require './rmi'
+  inspecti: require './inspecti'
+  
+  build: require './build'
+  rebuild: require './rebuild'
 
 if args.length is 0
   console.error usage
