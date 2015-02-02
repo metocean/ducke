@@ -3,7 +3,15 @@ module.exports = function(ducke, container, cmd) {
   return ducke.container(container).inspect(function(err, inspect) {
     var image, name;
     if (err != null) {
-      console.error(err);
+      if ((err.statusCode != null) && err.statusCode === 404) {
+        console.error();
+        console.error("  Container " + container.red + " not found");
+        console.error();
+      } else {
+        console.error();
+        console.error(err);
+        console.error();
+      }
       process.exit(1);
     }
     name = inspect.Name.slice(1);
@@ -16,7 +24,6 @@ module.exports = function(ducke, container, cmd) {
     }
     return ducke.container(container).exec(cmd, process.stdin, process.stdout, process.stderr, function(err, code) {
       if (err != null) {
-        console.error(err);
         process.exit(1);
       }
       return process.exit(code);

@@ -3,7 +3,14 @@ module.exports = (ducke, container, cmd) ->
     .container container
     .inspect (err, inspect) ->
       if err?
-        console.error err
+        if err.statusCode? and err.statusCode is 404
+          console.error()
+          console.error "  Container #{container.red} not found"
+          console.error()
+        else
+          console.error()
+          console.error err
+          console.error()
         process.exit 1
       
       name = inspect.Name[1..]
@@ -18,6 +25,5 @@ module.exports = (ducke, container, cmd) ->
         .container container
         .exec cmd, process.stdin, process.stdout, process.stderr, (err, code) ->
           if err?
-            console.error err
             process.exit 1
           process.exit code

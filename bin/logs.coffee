@@ -6,7 +6,14 @@ module.exports = (ducke, containers) ->
       .container id
       .logs (err, stream) ->
         if err?
-          console.error err
+          if err.statusCode? and err.statusCode is 404
+            console.error()
+            console.error "  Container #{container.red} not found"
+            console.error()
+          else
+            console.error()
+            console.error err
+            console.error()
           process.exit 1
         stream.pipe process.stdout
         #modem.DemuxStream stream, process.stdout, process.stderr

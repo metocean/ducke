@@ -1,7 +1,14 @@
 module.exports = (ducke, image, cmd) ->
   run = (err, id) ->
     if err?
-      console.error err
+      if err.statusCode? and err.statusCode is 404
+        console.error()
+        console.error "  Image #{image.red} not found"
+        console.error()
+      else
+        console.error()
+        console.error err
+        console.error()
       process.exit 1
     
     ducke

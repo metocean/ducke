@@ -10,7 +10,15 @@ module.exports = function(ducke, containers) {
     id = containers[_i];
     _results.push(ducke.container(id).logs(function(err, stream) {
       if (err != null) {
-        console.error(err);
+        if ((err.statusCode != null) && err.statusCode === 404) {
+          console.error();
+          console.error("  Container " + container.red + " not found");
+          console.error();
+        } else {
+          console.error();
+          console.error(err);
+          console.error();
+        }
         process.exit(1);
       }
       return stream.pipe(process.stdout);

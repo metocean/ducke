@@ -3,7 +3,15 @@ module.exports = function(ducke, image, cmd) {
   var fin, run;
   run = function(err, id) {
     if (err != null) {
-      console.error(err);
+      if ((err.statusCode != null) && err.statusCode === 404) {
+        console.error();
+        console.error("  Image " + image.red + " not found");
+        console.error();
+      } else {
+        console.error();
+        console.error(err);
+        console.error();
+      }
       process.exit(1);
     }
     return ducke.container(id).inspect(function(err, inspect) {
