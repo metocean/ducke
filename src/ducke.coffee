@@ -17,17 +17,17 @@ parallel = (tasks, callback) ->
 
 module.exports = class Ducke
   constructor: (options) ->
-    @_modem = new Modem options
+    @modem = new Modem options
   
   ping: (callback) =>
-    @_modem
+    @modem
       .get '/_ping'
       .result (err, result) ->
         return callback err if err?
         callback null, result is 'OK'
   
   ps: (callback)  =>
-    @_modem
+    @modem
       .get '/containers/json?all=1'
       .result (err, containers) =>
         return callback err if err?
@@ -37,7 +37,7 @@ module.exports = class Ducke
         for container in containers
           do (container) =>
             tasks.push (cb) =>
-              @_modem
+              @modem
                 .get "/containers/#{container.Id}/json"
                 .result (err, inspect) =>
                   if err?
@@ -59,7 +59,7 @@ module.exports = class Ducke
           callback null, statuses
   
   ls: (callback)  =>
-    @_modem
+    @modem
       .get '/images/json?all=1'
       .result (err, images) =>
         return callback err if err?
@@ -87,25 +87,25 @@ module.exports = class Ducke
   createContainer: (name, params, callback) =>
     url = '/containers/create'
     url += "?name=#{name}" if name?
-    @_modem
+    @modem
       .post url, params
       .result callback
   
   container: (id) =>
     inspect: (callback) =>
-      @_modem
+      @modem
         .get "/containers/#{id}/json"
         .result callback
       @container id
     
     logs: (callback) =>
-      @_modem
+      @modem
         .get "/containers/#{id}/logs?stderr=1&stdout=1&follow=1&tail=10"
         .stream callback
       @container id
     
     resize: (rows, columns, callback) =>
-      @_modem
+      @modem
         .post "/containers/#{id}/resize?h=#{rows}&w=#{columns}"
         .result (err, result) =>
           return callback err if err?
@@ -113,37 +113,37 @@ module.exports = class Ducke
       @container id
     
     start: (callback) =>
-      @_modem
+      @modem
         .post "/containers/#{id}/start", {}
         .result callback
       @container id
     
     stop: (callback) =>
-      @_modem
+      @modem
         .post "/containers/#{id}/stop?t=5", {}
         .result callback
       @container id
     
     wait: (callback) =>
-      @_modem
+      @modem
         .post "/containers/#{id}/wait", {}
         .result callback
       @container id
     
     rm: (callback) =>
-      @_modem
+      @modem
         .delete "/containers/#{id}"
         .result callback
       @container id
     
     attach: (callback) =>
-      @_modem
+      @modem
         .post "/containers/#{id}/attach?stream=true&stdin=true&stdout=true&stderr=true", {}
         .connect callback
       @container id
     
     kill: (callback) =>
-      @_modem
+      @modem
         .post "/containers/#{id}/kill?signal=SIGTERM", {}
         .result callback
       @container id
@@ -156,16 +156,17 @@ module.exports = class Ducke
         Tty: yes
         Cmd: cmd
       
-      @_modem
+      @modem
         .post "/containers/#{id}/exec", params
         .result (err, exec) =>
           return callback err if err?
           
-          @_modem
+          @modem
             .post "/exec/#{exec.Id}/start", { Detach: no, Tty: yes }
             .connect  (err, stream) =>
               return callback err if err?
               
+              stream.setEncoding 'utf8'
               stream.pipe stdout
               wasRaw = process.isRaw
               stdin.resume()
@@ -174,7 +175,7 @@ module.exports = class Ducke
               stdin.pipe stream
               
               updatesize = =>
-                @_modem
+                @modem
                   .post "/exec/#{exec.Id}/resize?h=#{stdout.rows}&w=#{stdout.columns}", {}
                   .result (err, r) ->
                     console.error err if err?
@@ -198,7 +199,7 @@ module.exports = class Ducke
       cache = ''
       cache = '&nocache=true' if !usecache
       
-      @_modem
+      @modem
         .postFile "/build?t=#{id}#{cache}", archive
         .stream (err, output) ->
           return callback err if err?
@@ -206,6 +207,7 @@ module.exports = class Ducke
           output.on 'data', (data) ->
             data = JSON.parse data
             return callback data.error if data.error?
+            return if !data.stream?
             lines = data.stream
               .split '\n'
               .filter (d) -> d isnt ''
@@ -240,13 +242,13 @@ module.exports = class Ducke
       @image id
     
     inspect: (callback) =>
-      @_modem
+      @modem
         .get "/images/#{id}/json"
         .result callback
       @image id
     
     rm: (callback) =>
-      @_modem
+      @modem
         .delete "/images/#{id}"
         .result callback
       @image id

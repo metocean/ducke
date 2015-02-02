@@ -15,5 +15,4 @@ module.exports = (ducke, containers) ->
             console.error err
             console.error()
           process.exit 1
-        stream.pipe process.stdout
-        #modem.DemuxStream stream, process.stdout, process.stderr
+        modem.DemuxStream stream, process.stdout, process.stderr

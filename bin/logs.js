@@ -21,7 +21,7 @@ module.exports = function(ducke, containers) {
         }
         process.exit(1);
       }
-      return stream.pipe(process.stdout);
+      return modem.DemuxStream(stream, process.stdout, process.stderr);
     }));
   }
   return _results;

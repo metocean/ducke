@@ -48,11 +48,11 @@ module.exports = Ducke = (function() {
     this.ls = __bind(this.ls, this);
     this.ps = __bind(this.ps, this);
     this.ping = __bind(this.ping, this);
-    this._modem = new Modem(options);
+    this.modem = new Modem(options);
   }
 
   Ducke.prototype.ping = function(callback) {
-    return this._modem.get('/_ping').result(function(err, result) {
+    return this.modem.get('/_ping').result(function(err, result) {
       if (err != null) {
         return callback(err);
       }
@@ -61,7 +61,7 @@ module.exports = Ducke = (function() {
   };
 
   Ducke.prototype.ps = function(callback) {
-    return this._modem.get('/containers/json?all=1').result((function(_this) {
+    return this.modem.get('/containers/json?all=1').result((function(_this) {
       return function(err, containers) {
         var container, errors, statuses, tasks, _fn, _i, _len;
         if (err != null) {
@@ -72,7 +72,7 @@ module.exports = Ducke = (function() {
         tasks = [];
         _fn = function(container) {
           return tasks.push(function(cb) {
-            return _this._modem.get("/containers/" + container.Id + "/json").result(function(err, inspect) {
+            return _this.modem.get("/containers/" + container.Id + "/json").result(function(err, inspect) {
               if (err != null) {
                 errors.push(err);
                 return cb();
@@ -111,7 +111,7 @@ module.exports = Ducke = (function() {
   };
 
   Ducke.prototype.ls = function(callback) {
-    return this._modem.get('/images/json?all=1').result((function(_this) {
+    return this.modem.get('/images/json?all=1').result((function(_this) {
       return function(err, images) {
         if (err != null) {
           return callback(err);
@@ -158,26 +158,26 @@ module.exports = Ducke = (function() {
     if (name != null) {
       url += "?name=" + name;
     }
-    return this._modem.post(url, params).result(callback);
+    return this.modem.post(url, params).result(callback);
   };
 
   Ducke.prototype.container = function(id) {
     return {
       inspect: (function(_this) {
         return function(callback) {
-          _this._modem.get("/containers/" + id + "/json").result(callback);
+          _this.modem.get("/containers/" + id + "/json").result(callback);
           return _this.container(id);
         };
       })(this),
       logs: (function(_this) {
         return function(callback) {
-          _this._modem.get("/containers/" + id + "/logs?stderr=1&stdout=1&follow=1&tail=10").stream(callback);
+          _this.modem.get("/containers/" + id + "/logs?stderr=1&stdout=1&follow=1&tail=10").stream(callback);
           return _this.container(id);
         };
       })(this),
       resize: (function(_this) {
         return function(rows, columns, callback) {
-          _this._modem.post("/containers/" + id + "/resize?h=" + rows + "&w=" + columns).result(function(err, result) {
+          _this.modem.post("/containers/" + id + "/resize?h=" + rows + "&w=" + columns).result(function(err, result) {
             if (err != null) {
               return callback(err);
             }
@@ -188,37 +188,37 @@ module.exports = Ducke = (function() {
       })(this),
       start: (function(_this) {
         return function(callback) {
-          _this._modem.post("/containers/" + id + "/start", {}).result(callback);
+          _this.modem.post("/containers/" + id + "/start", {}).result(callback);
           return _this.container(id);
         };
       })(this),
       stop: (function(_this) {
         return function(callback) {
-          _this._modem.post("/containers/" + id + "/stop?t=5", {}).result(callback);
+          _this.modem.post("/containers/" + id + "/stop?t=5", {}).result(callback);
           return _this.container(id);
         };
       })(this),
       wait: (function(_this) {
         return function(callback) {
-          _this._modem.post("/containers/" + id + "/wait", {}).result(callback);
+          _this.modem.post("/containers/" + id + "/wait", {}).result(callback);
           return _this.container(id);
         };
       })(this),
       rm: (function(_this) {
         return function(callback) {
-          _this._modem["delete"]("/containers/" + id).result(callback);
+          _this.modem["delete"]("/containers/" + id).result(callback);
           return _this.container(id);
         };
       })(this),
       attach: (function(_this) {
         return function(callback) {
-          _this._modem.post("/containers/" + id + "/attach?stream=true&stdin=true&stdout=true&stderr=true", {}).connect(callback);
+          _this.modem.post("/containers/" + id + "/attach?stream=true&stdin=true&stdout=true&stderr=true", {}).connect(callback);
           return _this.container(id);
         };
       })(this),
       kill: (function(_this) {
         return function(callback) {
-          _this._modem.post("/containers/" + id + "/kill?signal=SIGTERM", {}).result(callback);
+          _this.modem.post("/containers/" + id + "/kill?signal=SIGTERM", {}).result(callback);
           return _this.container(id);
         };
       })(this),
@@ -232,11 +232,11 @@ module.exports = Ducke = (function() {
             Tty: true,
             Cmd: cmd
           };
-          _this._modem.post("/containers/" + id + "/exec", params).result(function(err, exec) {
+          _this.modem.post("/containers/" + id + "/exec", params).result(function(err, exec) {
             if (err != null) {
               return callback(err);
             }
-            return _this._modem.post("/exec/" + exec.Id + "/start", {
+            return _this.modem.post("/exec/" + exec.Id + "/start", {
               Detach: false,
               Tty: true
             }).connect(function(err, stream) {
@@ -244,6 +244,7 @@ module.exports = Ducke = (function() {
               if (err != null) {
                 return callback(err);
               }
+              stream.setEncoding('utf8');
               stream.pipe(stdout);
               wasRaw = process.isRaw;
               stdin.resume();
@@ -251,7 +252,7 @@ module.exports = Ducke = (function() {
               stdin.setRawMode(true);
               stdin.pipe(stream);
               updatesize = function() {
-                return _this._modem.post("/exec/" + exec.Id + "/resize?h=" + stdout.rows + "&w=" + stdout.columns, {}).result(function(err, r) {
+                return _this.modem.post("/exec/" + exec.Id + "/resize?h=" + stdout.rows + "&w=" + stdout.columns, {}).result(function(err, r) {
                   if (err != null) {
                     return console.error(err);
                   }
@@ -291,7 +292,7 @@ module.exports = Ducke = (function() {
         if (!usecache) {
           cache = '&nocache=true';
         }
-        return _this._modem.postFile("/build?t=" + id + cache, archive).stream(function(err, output) {
+        return _this.modem.postFile("/build?t=" + id + cache, archive).stream(function(err, output) {
           if (err != null) {
             return callback(err);
           }
@@ -300,6 +301,9 @@ module.exports = Ducke = (function() {
             data = JSON.parse(data);
             if (data.error != null) {
               return callback(data.error);
+            }
+            if (data.stream == null) {
+              return;
             }
             lines = data.stream.split('\n').filter(function(d) {
               return d !== '';
@@ -358,13 +362,13 @@ module.exports = Ducke = (function() {
       })(this),
       inspect: (function(_this) {
         return function(callback) {
-          _this._modem.get("/images/" + id + "/json").result(callback);
+          _this.modem.get("/images/" + id + "/json").result(callback);
           return _this.image(id);
         };
       })(this),
       rm: (function(_this) {
         return function(callback) {
-          _this._modem["delete"]("/images/" + id).result(callback);
+          _this.modem["delete"]("/images/" + id).result(callback);
           return _this.image(id);
         };
       })(this),
