@@ -24,6 +24,5 @@ module.exports = (ducke, container, cmd) ->
       ducke
         .container container
         .exec cmd, process.stdin, process.stdout, process.stderr, (err, code) ->
-          if err?
-            process.exit 1
+          return process.exit 1 if err?
           process.exit code

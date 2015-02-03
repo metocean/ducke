@@ -1,13 +1,13 @@
 {
   "name": "ducke",
-  "version": "2.3.5",
+  "version": "2.3.6",
   "description": "A nodejs API and command line tool for docker",
   "bin": {
     "ducke": "bin/ducke.js"
   },
   "dependencies": {
     "colors": "1.0.3",
-    "ducke-modem": "0.1.1",
+    "ducke-modem": "1.0.0",
     "tar-fs": "1.4.1"
   },
   "repository": {

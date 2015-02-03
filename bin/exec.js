@@ -24,7 +24,7 @@ module.exports = function(ducke, container, cmd) {
     }
     return ducke.container(container).exec(cmd, process.stdin, process.stdout, process.stderr, function(err, code) {
       if (err != null) {
-        process.exit(1);
+        return process.exit(1);
       }
       return process.exit(code);
     });
