@@ -168,10 +168,10 @@ module.exports = class Ducke
               
               stream.setEncoding 'utf8'
               stream.pipe stdout
-              wasRaw = process.isRaw
               stdin.resume()
               stdin.setEncoding 'utf8'
-              stdin.setRawMode yes
+              if stdin.setRawMode?
+                stdin.setRawMode yes
               stdin.pipe stream
               
               updatesize = =>
@@ -184,7 +184,8 @@ module.exports = class Ducke
               
               stream.on 'end', ->
                 stdin.removeAllListeners()
-                stdin.setRawMode wasRaw
+                if stdin.setRawMode?
+                  stdin.setRawMode wasRaw
                 stdin.resume()
                 stdout.removeListener 'resize', updatesize
                 callback null, 0
@@ -278,7 +279,8 @@ module.exports = class Ducke
           wasRaw = process.isRaw
           stdin.resume()
           stdin.setEncoding 'utf8'
-          stdin.setRawMode yes
+          if stdin.setRawMode?
+            stdin.setRawMode yes
           stdin.pipe stream
           
           updatesize = ->
