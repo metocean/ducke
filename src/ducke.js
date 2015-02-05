@@ -240,7 +240,7 @@ module.exports = Ducke = (function() {
               Detach: false,
               Tty: true
             }).connect(function(err, stream) {
-              var updatesize;
+              var updatesize, wasRaw;
               if (err != null) {
                 return callback(err);
               }
@@ -248,6 +248,7 @@ module.exports = Ducke = (function() {
               stream.pipe(stdout);
               stdin.resume();
               stdin.setEncoding('utf8');
+              wasRaw = process.isRaw;
               if (stdin.setRawMode != null) {
                 stdin.setRawMode(true);
               }

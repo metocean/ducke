@@ -170,6 +170,7 @@ module.exports = class Ducke
               stream.pipe stdout
               stdin.resume()
               stdin.setEncoding 'utf8'
+              wasRaw = process.isRaw
               if stdin.setRawMode?
                 stdin.setRawMode yes
               stdin.pipe stream
