@@ -1,6 +1,6 @@
 {
   "name": "ducke",
-  "version": "2.3.8",
+  "version": "2.3.9",
   "description": "A nodejs API and command line tool for docker",
   "bin": {
     "ducke": "bin/ducke.js"
