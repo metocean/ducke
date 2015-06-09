@@ -34,6 +34,7 @@ npm install ducke
 
 ```
 Usage: ducke command [parameters]
+       ducke option
 
 Common:
 
@@ -62,6 +63,11 @@ Building:
 
     build     Build an image from a Dockerfile
     rebuild   Build an image from a Dockerfile from scratch
+
+Options:
+
+-h          Display this usage information
+-v          Display the version number
 ```
 
 ## Examples

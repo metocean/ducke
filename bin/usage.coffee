@@ -7,6 +7,7 @@ usage = """
 👾
 
   Usage: #{'ducke'.cyan} command parameters
+         #{'ducke'.cyan} option
 
   Common:
   
@@ -36,6 +37,11 @@ usage = """
   
     build     Build an image from a Dockerfile
     rebuild   Build an image from a Dockerfile from scratch
+
+  Options:
+
+    -h          Display this usage information
+    -v          Display the version number
 
 """
 
@@ -152,6 +158,14 @@ cmds =
   inspecti: ->
     return commands.inspecti ducke, args if args.length isnt 0
     usage_error 'ducke inspecti requires image names'
+
+
+  '-h': ->
+    console.log usage
+
+  '-v': ->
+    pjson = require '../package.json'
+    console.log pjson.version
 
 command = args[0]
 args.shift()
